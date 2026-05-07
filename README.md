@@ -9,10 +9,10 @@ A first-person walking sim set in liminal spaces. Single-file HTML5 + Three.js, 
 Open the latest version directly in a browser:
 
 ```
-liminal_8.html
+liminal_10.html
 ```
 
-Or visit any earlier version (`liminal.html`, `liminal_1.html` … `liminal_7.html`) to see how it evolved.
+Or visit any earlier version (`liminal.html`, `liminal_1.html` … `liminal_9.html`) to see how it evolved. The site at [liminal.stacklis.com](https://liminal.stacklis.com) lists every iteration.
 
 ## Controls
 
@@ -45,4 +45,4 @@ Settings and saved positions persist via `localStorage`.
 
 ## Versions
 
-Each numbered file is a frozen snapshot of a past iteration. `liminal_8.html` is current. New versions are committed as `Version N` on `main`.
+Each numbered file is a frozen snapshot of a past iteration. `liminal_10.html` is current. New versions are committed as `Version N` on `main`.

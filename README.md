@@ -9,23 +9,23 @@ A first-person walking sim set in liminal spaces. Single-file HTML5 + Three.js, 
 Open the latest version directly in a browser:
 
 ```
-liminal_10.html
+liminal_15.html
 ```
 
-Or visit any earlier version (`liminal.html`, `liminal_1.html` … `liminal_9.html`) to see how it evolved. The site at [liminal.stacklis.com](https://liminal.stacklis.com) lists every iteration.
+Or visit any earlier version (`liminal.html`, `liminal_1.html` … `liminal_14.html`) to see how it evolved. The site at [liminal.stacklis.com](https://liminal.stacklis.com) lists every iteration.
 
 ## Controls
 
 | Key | Action |
 | --- | --- |
 | `WASD` | move |
-| `Shift` | sprint |
+| `Shift` | dash |
 | `Space` | jump |
 | `Mouse` | look |
 | `E` | open / close door |
 | `Click` | lock cursor |
 
-Touch controls (on-screen d-pad) appear on mobile.
+Touch controls (on-screen d-pad + dash button) appear on mobile.
 
 ## Options
 
@@ -45,4 +45,4 @@ Settings and saved positions persist via `localStorage`.
 
 ## Versions
 
-Each numbered file is a frozen snapshot of a past iteration. `liminal_10.html` is current. New versions are committed as `Version N` on `main`.
+Each numbered file is a frozen snapshot of a past iteration. `liminal_15.html` is current (omnibus: tone restraint + perf/correctness + opt-in trails). New versions are committed as `Version N` on `main`.

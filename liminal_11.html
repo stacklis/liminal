@@ -1,0 +1,3531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#050508">
+<meta name="format-detection" content="telephone=no">
+<title>LIMINAL</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230d0d1a'/><rect x='10' y='4' width='12' height='24' fill='%231a1a2a'/><rect x='13' y='9' width='6' height='14' fill='%23334466'/><rect x='15' y='14' width='2' height='4' fill='%23445588'/></svg>">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:#050508;width:100%;height:100%;overflow:hidden;font-family:'Courier New',monospace;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;overscroll-behavior:none;}
+  body{position:fixed;inset:0;}
+  #splash{position:fixed;inset:0;background:#050508;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;color:#22223a;padding:24px;text-align:center;}
+  #splash h1{font-size:clamp(20px,5vw,36px);letter-spacing:.25em;text-transform:uppercase;margin-bottom:6px;color:#22223a;}
+  #splash p{font-size:9px;letter-spacing:.6em;text-transform:uppercase;color:#0d0d1c;margin-bottom:64px;}
+  #splash button{background:none;border:1px solid #1a1a32;color:#22223a;padding:13px 50px;cursor:pointer;font-size:9px;letter-spacing:.5em;text-transform:uppercase;font-family:inherit;transition:border-color .2s,color .2s;touch-action:manipulation;}
+  #splash button:hover,#splash button:active{border-color:#3a3a6a;color:#5a5a9a;}
+  #splash .hint{margin-top:48px;font-size:8px;color:#0d0d1c;letter-spacing:.3em;line-height:2.4;text-transform:uppercase;text-align:center;}
+  #splash .hint .touch-only{display:none;}
+  body.touch #splash .hint .desktop-only{display:none;}
+  body.touch #splash .hint .touch-only{display:inline;}
+  #wrap{position:relative;width:100%;height:100%;display:none;}
+  #gc{width:100%;height:100%;display:block;cursor:crosshair;touch-action:none;image-rendering:auto;image-rendering:-webkit-optimize-contrast;}
+  body.retro #gc{image-rendering:pixelated;}
+  #ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;image-rendering:pixelated;}
+  #hud{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);color:#13131e;font-size:8px;letter-spacing:.5em;text-transform:uppercase;pointer-events:none;text-align:center;white-space:nowrap;}
+  #info{position:absolute;top:10px;left:12px;color:#1a1a2a;font-size:7px;letter-spacing:.3em;text-transform:uppercase;pointer-events:none;line-height:1.8;}
+
+  /* ─── Touch controls (landscape mobile) ─── */
+  #touchUI{position:absolute;inset:0;pointer-events:none;display:none;}
+  body.touch #touchUI{display:block;}
+  body.touch #hud{bottom:max(10px,env(safe-area-inset-bottom));}
+  #dpad{position:absolute;bottom:max(18px,env(safe-area-inset-bottom));left:max(18px,env(safe-area-inset-left));display:grid;gap:6px;grid-template-areas:'. u .' 'l . r' '. d .';width:160px;height:160px;pointer-events:auto;touch-action:none;background:radial-gradient(circle at 50% 50%, rgba(20,20,40,.18) 0%, rgba(20,20,40,.08) 55%, rgba(20,20,40,0) 75%);border-radius:50%;}
+  .dkey{background:rgba(12,12,24,.55);border:1px solid #1f1f36;color:#3a3a5a;font-size:20px;cursor:pointer;border-radius:6px;touch-action:none;-webkit-user-select:none;user-select:none;display:flex;align-items:center;justify-content:center;pointer-events:auto;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
+  .dkey.active{background:rgba(40,40,72,.70);border-color:#4a4a7a;color:#7a7aaa;}
+  .dkey[data-key=KeyW]{grid-area:u;} .dkey[data-key=KeyA]{grid-area:l;}
+  .dkey[data-key=KeyD]{grid-area:r;} .dkey[data-key=KeyS]{grid-area:d;}
+
+  #actions{position:absolute;bottom:max(18px,env(safe-area-inset-bottom));right:max(18px,env(safe-area-inset-right));display:flex;flex-direction:column-reverse;gap:8px;align-items:flex-end;pointer-events:none;}
+  #actions .row{display:flex;gap:8px;pointer-events:none;}
+  .akey{background:rgba(12,12,24,.55);border:1px solid #1f1f36;color:#3a3a5a;font-size:9px;letter-spacing:.25em;text-transform:uppercase;font-family:inherit;border-radius:6px;touch-action:none;-webkit-user-select:none;user-select:none;display:flex;align-items:center;justify-content:center;pointer-events:auto;padding:0;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
+  .akey.big{width:74px;height:74px;font-size:10px;}
+  .akey.sm{width:54px;height:46px;}
+  .akey.active{background:rgba(40,40,72,.70);border-color:#4a4a7a;color:#7a7aaa;}
+  .akey.toggle.on{background:rgba(60,60,100,.55);border-color:#5a5a90;color:#9a9ad0;}
+
+  /* compress on short landscape (e.g. iPhone landscape height ~390) */
+  @media (max-height:430px){
+    #dpad{width:130px;height:130px;gap:4px;}
+    .akey.big{width:62px;height:62px;}
+    .akey.sm{width:48px;height:40px;}
+  }
+  @media (max-height:340px){
+    #dpad{width:108px;height:108px;}
+    .akey.big{width:54px;height:54px;}
+    .akey.sm{width:44px;height:36px;font-size:8px;}
+  }
+
+  /* ─── Mobile brightness boost ───
+     The desktop look is intentionally near-black; on a phone screen in
+     daylight that becomes unreadable. The brightness() filter alone just
+     scales already-rendered pixels — a dark pixel × 2 is still dark — so
+     we pair it with contrast(<1) to act like a gamma curve that lifts
+     shadows much more than highlights. Splash gets a heavier boost since
+     the splash background is a flat near-black colour, not a 3D render. */
+  @media (pointer: coarse) {
+    #splash{filter:brightness(4);}
+    /* The WebGL render is now doing most of the lifting (ACES exposure 1.5,
+       AmbientLight 1.5, emissive floor on concrete materials). CSS adds a
+       gentle final pop — contrast(1.05) for punch instead of the previous
+       contrast(0.96) which was actually flattening the image. */
+    #gc{filter:brightness(1.4) contrast(1.05) saturate(1.05);}
+  }
+  body.touch #splash{filter:brightness(4);}
+  body.touch #gc{filter:brightness(1.4) contrast(1.05) saturate(1.05);}
+
+  /* Options menu */
+  #optBtn{position:absolute;top:max(10px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));background:rgba(5,5,8,.4);border:1px solid #1a1a2a;color:#2a2a44;font-size:7px;letter-spacing:.4em;text-transform:uppercase;font-family:inherit;padding:7px 12px;cursor:pointer;z-index:5;transition:border-color .2s,color .2s;touch-action:manipulation;}
+  body.touch #optBtn{padding:9px 14px;font-size:8px;color:#3a3a5a;}
+  #optBtn:hover,#optBtn:active{border-color:#3a3a6a;color:#5a5a8a;}
+  #optPanel{position:absolute;top:0;right:0;width:280px;max-width:100%;height:100%;background:rgba(5,5,8,.97);border-left:1px solid #1a1a2a;display:none;flex-direction:column;padding:32px 28px;padding-top:max(32px,env(safe-area-inset-top));padding-right:max(28px,env(safe-area-inset-right));padding-bottom:max(28px,env(safe-area-inset-bottom));z-index:20;gap:0;overflow-y:auto;}
+  #optPanel.open{display:flex;}
+  #optPanel h2{font-size:9px;letter-spacing:.5em;text-transform:uppercase;color:#22223a;margin-bottom:36px;margin-top:8px;}
+  .opt-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;border-bottom:1px solid #111120;padding-bottom:20px;}
+  .opt-row:last-of-type{border-bottom:none;}
+  .opt-label{font-size:8px;letter-spacing:.35em;text-transform:uppercase;color:#1e1e32;}
+  .opt-val{font-size:8px;letter-spacing:.3em;color:#2a2a44;min-width:60px;text-align:right;}
+  .opt-toggle{background:none;border:1px solid #1a1a2a;color:#1e1e32;font-size:7px;letter-spacing:.35em;text-transform:uppercase;font-family:inherit;padding:4px 10px;cursor:pointer;transition:border-color .15s,color .15s;}
+  .opt-toggle:hover{border-color:#3a3a6a;color:#4a4a80;}
+  .opt-toggle.on{border-color:#2a2a4a;color:#3a3a6a;}
+  input[type=range]{-webkit-appearance:none;width:100px;height:2px;background:#1a1a2a;outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;background:#2a2a4a;border-radius:50%;}
+  .opt-section{font-size:7px;letter-spacing:.5em;text-transform:uppercase;color:#111120;margin-bottom:18px;margin-top:8px;}
+  #optClose{margin-top:auto;background:none;border:1px solid #1a1a2a;color:#1a1a2a;font-size:7px;letter-spacing:.4em;text-transform:uppercase;font-family:inherit;padding:8px;cursor:pointer;width:100%;transition:border-color .2s,color .2s;}
+  #optClose:hover{border-color:#3a3a6a;color:#3a3a6a;}
+  #saveMsg{font-size:7px;letter-spacing:.3em;color:#1a2a1a;text-transform:uppercase;text-align:center;margin-bottom:10px;min-height:14px;transition:opacity .5s;}
+
+  /* Death screen */
+  #death{position:fixed;inset:0;background:rgba(40,0,0,0);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:50;color:#3a0808;font-family:'Courier New',monospace;cursor:pointer;transition:background 2.4s,color 2.4s;}
+  #death.show{display:flex;}
+  #death.in{background:rgba(40,0,0,0.96);color:#5a1010;}
+  #death h1{font-size:clamp(20px,4vw,30px);letter-spacing:.45em;margin-bottom:32px;text-transform:uppercase;}
+  #death p{font-size:8px;letter-spacing:.5em;text-transform:uppercase;opacity:.5;}
+  #death.in h1{text-shadow:0 0 24px rgba(80,12,12,.45);}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div style="font-size:9px;letter-spacing:.45em;color:#171726;margin-bottom:48px">████ ████ ████</div>
+  <h1>LIMINAL</h1>
+  <p>you exist. that is enough.</p>
+  <button id="enterBtn">enter</button>
+  <div class="hint">
+    <span class="desktop-only">
+      WASD — move &nbsp;|&nbsp; SHIFT — sprint &nbsp;|&nbsp; C — crouch<br>
+      SPACE — jump &nbsp;|&nbsp; MOUSE — look &nbsp;|&nbsp; CLICK — lock cursor<br>
+      E — open / close door &nbsp;|&nbsp; ESC / P — options
+    </span>
+    <span class="touch-only">
+      D-pad — move &nbsp;|&nbsp; right side — look<br>
+      jump &nbsp;|&nbsp; run &nbsp;|&nbsp; crouch &nbsp;|&nbsp; use<br>
+      tap options for settings &nbsp; rotate to landscape
+    </span>
+  </div>
+</div>
+
+<div id="wrap">
+  <canvas id="gc"></canvas>
+  <canvas id="ov" width="320" height="240"></canvas>
+  <div id="hud">you are here</div>
+  <div id="info"></div>
+  <!-- Options button -->
+  <button id="optBtn">options</button>
+
+  <!-- Options panel -->
+  <div id="optPanel">
+    <h2>options</h2>
+
+    <div class="opt-section">audio</div>
+    <div class="opt-row">
+      <span class="opt-label">master</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="range" id="volSlider" min="0" max="100" value="70">
+        <span class="opt-val" id="volVal">70</span>
+      </div>
+    </div>
+    <div class="opt-row">
+      <span class="opt-label">ambient</span>
+      <button class="opt-toggle on" id="ambToggle">on</button>
+    </div>
+    <div class="opt-row">
+      <span class="opt-label">footsteps</span>
+      <button class="opt-toggle on" id="stepToggle">on</button>
+    </div>
+
+    <div class="opt-section" style="margin-top:8px;">display</div>
+    <div class="opt-row">
+      <span class="opt-label">scanlines</span>
+      <button class="opt-toggle on" id="scanToggle">on</button>
+    </div>
+    <div class="opt-row">
+      <span class="opt-label">film grain</span>
+      <button class="opt-toggle on" id="grainToggle">on</button>
+    </div>
+    <div class="opt-row">
+      <span class="opt-label">vignette</span>
+      <button class="opt-toggle on" id="vigToggle">on</button>
+    </div>
+    <div class="opt-row">
+      <span class="opt-label">fov</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="range" id="fovSlider" min="55" max="90" value="68">
+        <span class="opt-val" id="fovVal">68</span>
+      </div>
+    </div>
+
+    <div class="opt-section" style="margin-top:8px;">graphics</div>
+    <div class="opt-row">
+      <span class="opt-label">retro mode</span>
+      <button class="opt-toggle" id="retroToggle">off</button>
+    </div>
+    <div class="opt-row">
+      <span class="opt-label">memory drift</span>
+      <button class="opt-toggle on" id="driftToggle">on</button>
+    </div>
+    <div class="opt-row">
+      <span class="opt-label">presences</span>
+      <button class="opt-toggle on" id="ghostToggle">on</button>
+    </div>
+    <div class="opt-row">
+      <span class="opt-label">blob shadow</span>
+      <button class="opt-toggle on" id="shadToggle">on</button>
+    </div>
+    <div class="opt-row" style="border-bottom:none;padding-bottom:0;margin-bottom:6px;">
+      <span class="opt-label" style="font-size:7px;color:#0d0d18;">reload to apply</span>
+      <span></span>
+    </div>
+
+    <div class="opt-section" style="margin-top:8px;">controls</div>
+    <div class="opt-row">
+      <span class="opt-label">sensitivity</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="range" id="sensSlider" min="20" max="200" value="100">
+        <span class="opt-val" id="sensVal">100</span>
+      </div>
+    </div>
+    <div class="opt-row">
+      <span class="opt-label">invert y</span>
+      <button class="opt-toggle" id="invToggle">off</button>
+    </div>
+
+    <div class="opt-section" style="margin-top:8px;">save</div>
+    <div class="opt-row">
+      <span class="opt-label">position</span>
+      <div style="display:flex;gap:8px;">
+        <button class="opt-toggle" id="saveBtn">save</button>
+        <button class="opt-toggle" id="loadBtn">load</button>
+        <button class="opt-toggle" id="clearBtn">clear</button>
+      </div>
+    </div>
+    <div class="opt-row" style="border-bottom:none;padding-bottom:0;margin-bottom:0;">
+      <span class="opt-label">saved at</span>
+      <span class="opt-val" id="savedPos">—</span>
+    </div>
+
+    <div id="saveMsg"></div>
+    <button id="optClose">resume</button>
+  </div>
+
+  <div id="death">
+    <h1>You were found</h1>
+    <p>click to begin again</p>
+  </div>
+
+  <div id="touchUI">
+    <div id="dpad">
+      <button class="dkey" data-key="KeyW">▲</button>
+      <button class="dkey" data-key="KeyA">◀</button>
+      <button class="dkey" data-key="KeyD">▶</button>
+      <button class="dkey" data-key="KeyS">▼</button>
+    </div>
+    <div id="actions">
+      <button class="akey big" data-key="Space">jump</button>
+      <div class="row">
+        <button class="akey sm toggle" data-key="ShiftLeft" data-toggle="1">run</button>
+        <button class="akey sm toggle" data-key="KeyC" data-toggle="1">crch</button>
+        <button class="akey sm" data-key="KeyE">use</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ─── OPTIONS + SAVE STATE ─────────────────────────────────────────────────────
+var opts = {
+  vol:      70,
+  ambient:  true,
+  footsteps:true,
+  scanlines:true,
+  grain:    true,
+  vignette: true,
+  fov:      68,
+  sens:     100,
+  invertY:  false,
+  // retro=false → higher internal res, antialias on desktop, smooth upscale,
+  //               Phong metals (PS2-ish look). retro=true → 320×240 + nearest
+  //               filtering + Lambert (the original PS1 look). Reload to apply.
+  retro:    false,
+  // v11 features. All default-on but reversible from the panel. The drift /
+  // ghost flags are read at frame time so flipping them takes effect mid-walk
+  // (drift won't *un-apply* what's already happened, but it stops new rolls
+  // and ghosts hide on the spot). Blob shadow re-checks per-frame too.
+  drift:    true,
+  ghosts:   true,
+  blobShadow: true
+};
+
+// Load saved options
+try {
+  var so = localStorage.getItem('liminal_opts');
+  if (so) opts = Object.assign(opts, JSON.parse(so));
+} catch(e){}
+
+function saveOpts() {
+  try { localStorage.setItem('liminal_opts', JSON.stringify(opts)); } catch(e){}
+}
+
+function applyOpts() {
+  if (masterGain) masterGain.gain.value = opts.vol / 100;
+  // ambient is just master vol — if ambient off, mute both buses
+  if (outBus && inBus) {
+    var ambMul = opts.ambient ? 1 : 0;
+    // re-apply inside crossfade on top of ambient toggle
+    outBus.gain.value = isInside ? 0.12 * ambMul : 1 * ambMul;
+    inBus.gain.value  = isInside ? 1   * ambMul : 0 * ambMul;
+  }
+  // v11: spatial sources route through THREE.AudioListener → masterGain.
+  // Ambient toggle should also silence them since they're ambient flavour.
+  if (_audioListener && _audioListener.gain) {
+    _audioListener.gain.gain.value = opts.ambient ? 1 : 0;
+  }
+  // sync UI
+  document.getElementById('volSlider').value = opts.vol;
+  document.getElementById('volVal').textContent = opts.vol;
+  setToggle('ambToggle',  opts.ambient);
+  setToggle('stepToggle', opts.footsteps);
+  setToggle('scanToggle', opts.scanlines);
+  setToggle('grainToggle',opts.grain);
+  setToggle('vigToggle',  opts.vignette);
+  document.getElementById('fovSlider').value = opts.fov;
+  document.getElementById('fovVal').textContent = opts.fov;
+  document.getElementById('sensSlider').value = opts.sens;
+  document.getElementById('sensVal').textContent = opts.sens;
+  setToggle('invToggle', opts.invertY);
+  setToggle('retroToggle', opts.retro);
+  setToggle('driftToggle', opts.drift);
+  setToggle('ghostToggle', opts.ghosts);
+  setToggle('shadToggle',  opts.blobShadow);
+  // Push fov/sens out to the running game
+  if (window.__applyFov) window.__applyFov(opts.fov);
+  if (window.__applySens) window.__applySens(opts.sens, opts.invertY);
+  updateSavedDisplay();
+}
+
+function setToggle(id, on) {
+  var el = document.getElementById(id);
+  el.textContent = on ? 'on' : 'off';
+  el.classList.toggle('on', on);
+}
+
+function updateSavedDisplay() {
+  try {
+    var s = localStorage.getItem('liminal_save');
+    if (s) {
+      var d = JSON.parse(s);
+      document.getElementById('savedPos').textContent =
+        d.x.toFixed(0)+', '+d.z.toFixed(0);
+    } else {
+      document.getElementById('savedPos').textContent = '—';
+    }
+  } catch(e){ document.getElementById('savedPos').textContent = '—'; }
+}
+
+function showSaveMsg(msg) {
+  var el = document.getElementById('saveMsg');
+  el.textContent = msg;
+  el.style.opacity = '1';
+  setTimeout(function(){ el.style.opacity='0'; }, 1800);
+}
+
+// Options panel toggle
+var optOpen = false;
+var getGameCamera = null; // set by startGame
+
+document.getElementById('optBtn').addEventListener('click', function() {
+  optOpen = !optOpen;
+  document.getElementById('optPanel').classList.toggle('open', optOpen);
+  applyOpts();
+  if (optOpen) {
+    // exit pointer lock so mouse can interact with panel
+    if (document.exitPointerLock) document.exitPointerLock();
+  }
+});
+document.getElementById('optClose').addEventListener('click', function() {
+  optOpen = false;
+  document.getElementById('optPanel').classList.remove('open');
+});
+
+// Volume slider
+document.getElementById('volSlider').addEventListener('input', function() {
+  opts.vol = parseInt(this.value);
+  document.getElementById('volVal').textContent = opts.vol;
+  if (masterGain) masterGain.gain.value = opts.vol / 100;
+  saveOpts();
+});
+
+// Toggle buttons
+function bindToggle(id, key) {
+  document.getElementById(id).addEventListener('click', function() {
+    opts[key] = !opts[key];
+    setToggle(id, opts[key]);
+    applyOpts();
+    saveOpts();
+  });
+}
+bindToggle('ambToggle',  'ambient');
+bindToggle('stepToggle', 'footsteps');
+bindToggle('scanToggle', 'scanlines');
+bindToggle('grainToggle','grain');
+bindToggle('vigToggle',  'vignette');
+bindToggle('invToggle',  'invertY');
+bindToggle('retroToggle','retro');
+bindToggle('driftToggle','drift');
+bindToggle('ghostToggle','ghosts');
+bindToggle('shadToggle', 'blobShadow');
+
+// Reflect the saved retro state on the body so CSS picks it up before any
+// game render. Must run after document.body exists, which it does because
+// this script tag is at the bottom of the body.
+if (opts.retro) document.body.classList.add('retro');
+
+// FOV slider
+document.getElementById('fovSlider').addEventListener('input', function() {
+  opts.fov = parseInt(this.value);
+  document.getElementById('fovVal').textContent = opts.fov;
+  if (window.__applyFov) window.__applyFov(opts.fov);
+  saveOpts();
+});
+
+// Mouse sensitivity slider
+document.getElementById('sensSlider').addEventListener('input', function() {
+  opts.sens = parseInt(this.value);
+  document.getElementById('sensVal').textContent = opts.sens;
+  if (window.__applySens) window.__applySens(opts.sens, opts.invertY);
+  saveOpts();
+});
+
+// Save / load / clear
+document.getElementById('saveBtn').addEventListener('click', function() {
+  if (!getGameCamera) return;
+  var cam = getGameCamera();
+  try {
+    localStorage.setItem('liminal_save', JSON.stringify({
+      x: cam.x, y: cam.y, z: cam.z,
+      yaw: cam.yaw, pitch: cam.pitch
+    }));
+    showSaveMsg('position saved');
+    updateSavedDisplay();
+  } catch(e){ showSaveMsg('save failed'); }
+});
+document.getElementById('loadBtn').addEventListener('click', function() {
+  if (!getGameCamera) return;
+  try {
+    var s = localStorage.getItem('liminal_save');
+    if (!s) { showSaveMsg('nothing saved'); return; }
+    var d = JSON.parse(s);
+    getGameCamera(d); // pass data = load mode
+    showSaveMsg('position loaded');
+    optOpen = false;
+    document.getElementById('optPanel').classList.remove('open');
+  } catch(e){ showSaveMsg('load failed'); }
+});
+document.getElementById('clearBtn').addEventListener('click', function() {
+  try { localStorage.removeItem('liminal_save'); showSaveMsg('save cleared'); updateSavedDisplay(); } catch(e){}
+});
+
+// Escape key closes panel
+window.addEventListener('keydown', function(e) {
+  if (e.code === 'Escape' || e.code === 'KeyP') {
+    optOpen = !optOpen;
+    document.getElementById('optPanel').classList.toggle('open', optOpen);
+    if (optOpen) { applyOpts(); if (document.exitPointerLock) document.exitPointerLock(); }
+  }
+});
+
+
+// Detect touch devices reliably across iOS/Android (pointer:coarse covers most,
+// 'ontouchstart' catches older Android, and a touch points check covers hybrids).
+var IS_TOUCH = (
+  (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
+  ('ontouchstart' in window) ||
+  (navigator.maxTouchPoints && navigator.maxTouchPoints > 1)
+);
+if (IS_TOUCH) document.body.classList.add('touch');
+
+// Block the long-press context menu on touch devices so look-drag doesn't get hijacked.
+document.addEventListener('contextmenu', function(e){ if (IS_TOUCH) e.preventDefault(); });
+// Block iOS rubber-band / pinch-zoom anywhere outside controls.
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+document.addEventListener('touchmove', function(e){
+  if (e.touches && e.touches.length > 1) e.preventDefault();
+}, {passive:false});
+
+document.getElementById('enterBtn').addEventListener('click', function() {
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('wrap').style.display = 'block';
+  // Try to enter fullscreen on touch — gives more screen real estate and hides
+  // the iOS Safari address bar. Best-effort; failures are silent.
+  if (IS_TOUCH) {
+    var el = document.documentElement;
+    var rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen;
+    if (rfs) try { rfs.call(el); } catch(e){}
+  }
+  if (typeof THREE === 'undefined') {
+    document.getElementById('hud').textContent = 'loading three.js...';
+    var check = setInterval(function() {
+      if (typeof THREE !== 'undefined') { clearInterval(check); startGame(); }
+    }, 100);
+  } else {
+    startGame();
+  }
+});
+
+// ─── AUDIO ───────────────────────────────────────────────────────────────────
+var AC, masterGain, reverb, reverbGain, outBus, inBus, audioReady = false, isInside = false;
+var lastStep = 0, breathTimer = 0;
+// v11: THREE.AudioListener is attached to the camera by startGame after both
+// the camera and AC exist. Spatial sources are created lazily once both are
+// in place. None of this disturbs the existing outBus/inBus crossfade graph.
+var _audioListener = null;
+var _spatialReady = false;
+
+function initAudio() {
+  if (audioReady) return;
+  audioReady = true;
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = AC.createGain(); masterGain.gain.value = 0.7; masterGain.connect(AC.destination);
+
+  // Reverb IR
+  reverb = AC.createConvolver();
+  var irLen = Math.floor(AC.sampleRate * 2.6);
+  var irBuf = AC.createBuffer(2, irLen, AC.sampleRate);
+  for (var c = 0; c < 2; c++) {
+    var ch = irBuf.getChannelData(c);
+    for (var i = 0; i < irLen; i++) ch[i] = (Math.random()*2-1) * Math.pow(1 - i/irLen, 2.2);
+  }
+  reverb.buffer = irBuf;
+  // Reverb output runs through a controllable gain so the room "wetness" can
+  // be modulated in real time based on whether you're inside, near walls, etc.
+  reverbGain = AC.createGain(); reverbGain.gain.value = 0.18;
+  reverb.connect(reverbGain); reverbGain.connect(masterGain);
+
+  outBus = AC.createGain(); outBus.gain.value = 1; outBus.connect(masterGain);
+  inBus  = AC.createGain(); inBus.gain.value  = 0; inBus.connect(reverb); inBus.connect(masterGain);
+
+  // Outdoor drones — lower the hissy bands; keep the low rumble
+  drone(38,  0.16, outBus); drone(41, 0.09, outBus);
+  drone(60,  0.04, outBus); drone(120,0.025,outBus);
+  noiseBand(900,  1.4, 0.014, outBus); // mid air movement (was 0.032)
+  noiseBand(3200, 4.0, 0.0035,outBus); // upper hiss heavily attenuated (was 0.012)
+  // Indoor — keep the low body, sharply reduce the high hiss
+  drone(55,  0.14, inBus);  drone(110,0.07, inBus);
+  noiseBand(320,  2.2, 0.038, inBus);  // low room tone (was 0.05 @ 380)
+  noiseBand(3400, 9.0, 0.010, inBus);  // upper hiss heavily attenuated (was 0.04 @ 3800)
+
+  scheduleSwell();
+  scheduleDistant();
+}
+
+function drone(freq, vol, dest) {
+  var o = AC.createOscillator(), g = AC.createGain();
+  var lfo = AC.createOscillator(), lg = AC.createGain();
+  lfo.frequency.value = 0.05 + Math.random()*0.07; lg.gain.value = freq * 0.003;
+  lfo.connect(lg); lg.connect(o.frequency); lfo.start();
+  o.type = 'sine'; o.frequency.value = freq; g.gain.value = vol;
+  o.connect(g); g.connect(dest); o.start();
+}
+
+function noiseBand(freq, q, vol, dest) {
+  var len = AC.sampleRate * 2, buf = AC.createBuffer(1, len, AC.sampleRate);
+  var d = buf.getChannelData(0); for (var i=0;i<len;i++) d[i]=Math.random()*2-1;
+  var src = AC.createBufferSource(); src.buffer = buf; src.loop = true;
+  var bp = AC.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=freq; bp.Q.value=q;
+  var g = AC.createGain(); g.gain.value = vol;
+  src.connect(bp); bp.connect(g); g.connect(dest); src.start();
+}
+
+function scheduleSwell() {
+  function sw() {
+    if (!AC) return;
+    var f = [220,277,330,370,415,494][Math.floor(Math.random()*6)];
+    var o=AC.createOscillator(), g=AC.createGain(), now=AC.currentTime, dur=5+Math.random()*8;
+    o.frequency.value=f; o.type='sine';
+    g.gain.setValueAtTime(0,now); g.gain.linearRampToValueAtTime(0.05,now+dur*.35); g.gain.linearRampToValueAtTime(0,now+dur);
+    o.connect(g); g.connect(masterGain); o.start(now); o.stop(now+dur+.1);
+    setTimeout(sw, 10000+Math.random()*20000);
+  }
+  setTimeout(sw, 5000+Math.random()*8000);
+}
+
+function setInsideAudio(inside) {
+  if (!AC || inside === isInside) return;
+  isInside = inside;
+  var now = AC.currentTime, t = 1.2;
+  inBus.gain.linearRampToValueAtTime(inside ? 1 : 0, now+t);
+  outBus.gain.linearRampToValueAtTime(inside ? 0.12 : 1, now+t);
+}
+
+function playFootstep(surface, sprinting, crouching) {
+  if (!AC) return;
+  var now = AC.currentTime;
+  var interval = crouching ? 0.78 : (sprinting ? 0.25 : 0.42);
+  if (now - lastStep < interval) return;
+  lastStep = now;
+  var bus = isInside ? inBus : outBus;
+  // Per-step output gain that applies the crouch attenuation in one place
+  var quiet = crouching ? 0.35 : 1.0;
+  var stepBus = AC.createGain(); stepBus.gain.value = quiet; stepBus.connect(bus);
+  var stepRev = AC.createGain(); stepRev.gain.value = quiet; stepRev.connect(reverb);
+
+  if (surface === 'tile') {
+    var o=AC.createOscillator(),g=AC.createGain();
+    o.frequency.setValueAtTime(300,now); o.frequency.exponentialRampToValueAtTime(70,now+.07);
+    g.gain.setValueAtTime(0.35,now); g.gain.exponentialRampToValueAtTime(0.001,now+.1);
+    o.connect(g); g.connect(stepBus); o.start(now); o.stop(now+.11);
+    var e=AC.createOscillator(),eg=AC.createGain();
+    e.frequency.setValueAtTime(250,now+.06); e.frequency.exponentialRampToValueAtTime(50,now+.14);
+    eg.gain.setValueAtTime(0.08,now+.06); eg.gain.exponentialRampToValueAtTime(0.001,now+.18);
+    e.connect(eg); eg.connect(stepRev); e.start(now+.06); e.stop(now+.19);
+  } else if (surface === 'metal') {
+    var o=AC.createOscillator(),lp=AC.createBiquadFilter(),g=AC.createGain();
+    o.type='square'; o.frequency.setValueAtTime(560,now); o.frequency.exponentialRampToValueAtTime(180,now+.12);
+    lp.type='lowpass'; lp.frequency.value=2000;
+    g.gain.setValueAtTime(0.22,now); g.gain.exponentialRampToValueAtTime(0.001,now+.18);
+    o.connect(lp); lp.connect(g); g.connect(stepBus); o.start(now); o.stop(now+.19);
+    var r=AC.createOscillator(),rg=AC.createGain();
+    r.frequency.value=1200; rg.gain.setValueAtTime(0.06,now); rg.gain.exponentialRampToValueAtTime(0.001,now+.65);
+    r.connect(rg); rg.connect(stepRev); r.start(now); r.stop(now+.66);
+  } else { // concrete
+    var o=AC.createOscillator(),g=AC.createGain();
+    o.frequency.setValueAtTime(165,now); o.frequency.exponentialRampToValueAtTime(36,now+.09);
+    g.gain.setValueAtTime(0.4,now); g.gain.exponentialRampToValueAtTime(0.001,now+.13);
+    o.connect(g); g.connect(stepBus); o.start(now); o.stop(now+.14);
+    var c=AC.createOscillator(),cg=AC.createGain();
+    c.frequency.value=1800; cg.gain.setValueAtTime(0.1,now); cg.gain.exponentialRampToValueAtTime(0.001,now+.04);
+    c.connect(cg); cg.connect(stepBus); c.start(now); c.stop(now+.05);
+  }
+}
+
+function playJump() {
+  if (!AC) return; var now=AC.currentTime;
+  var o=AC.createOscillator(),g=AC.createGain();
+  o.frequency.setValueAtTime(110,now); o.frequency.exponentialRampToValueAtTime(50,now+.1);
+  g.gain.setValueAtTime(0.25,now); g.gain.exponentialRampToValueAtTime(0.001,now+.14);
+  o.connect(g); g.connect(masterGain); o.start(now); o.stop(now+.15);
+}
+
+function playLand(vel) {
+  if (!AC) return; var hard=vel<-7, now=AC.currentTime;
+  var o=AC.createOscillator(),g=AC.createGain();
+  o.frequency.setValueAtTime(hard?110:85,now); o.frequency.exponentialRampToValueAtTime(26,now+.17);
+  g.gain.setValueAtTime(hard?.65:.4,now); g.gain.exponentialRampToValueAtTime(0.001,now+.2);
+  o.connect(g); g.connect(masterGain); o.start(now); o.stop(now+.21);
+  if (isInside) {
+    var r=AC.createOscillator(),rg=AC.createGain();
+    r.frequency.setValueAtTime(180,now+.02); r.frequency.exponentialRampToValueAtTime(45,now+.22);
+    rg.gain.setValueAtTime(0.18,now+.02); rg.gain.exponentialRampToValueAtTime(0.001,now+.28);
+    r.connect(rg); rg.connect(reverb); r.start(now+.02); r.stop(now+.29);
+  }
+}
+
+function doBreath(dt, sprinting, onGround) {
+  if (!AC) return;
+  if (sprinting && onGround) {
+    breathTimer += dt;
+    if (breathTimer > 0.9) {
+      breathTimer = 0;
+      var now=AC.currentTime, len=Math.floor(AC.sampleRate*.15);
+      var buf=AC.createBuffer(1,len,AC.sampleRate), d=buf.getChannelData(0);
+      for(var i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/len);
+      var src=AC.createBufferSource(); src.buffer=buf;
+      var bp=AC.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=850; bp.Q.value=2;
+      var g=AC.createGain(); g.gain.value=0.06;
+      src.connect(bp); bp.connect(g); g.connect(masterGain); src.start(now);
+    }
+  } else { breathTimer = 0; }
+}
+
+function playHeartbeat() {
+  if (!AC) return;
+  var now = AC.currentTime;
+  // Two muffled thumps: lub-dub
+  function thump(at, vol) {
+    var o=AC.createOscillator(), g=AC.createGain();
+    o.type='sine';
+    o.frequency.setValueAtTime(72, at); o.frequency.exponentialRampToValueAtTime(28, at+0.14);
+    g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(vol, at+0.015); g.gain.exponentialRampToValueAtTime(0.0001, at+0.18);
+    o.connect(g); g.connect(masterGain); o.start(at); o.stop(at+0.2);
+  }
+  thump(now, 0.18); thump(now+0.18, 0.13);
+}
+
+function playDoorCreak(opening) {
+  if (!AC) return;
+  var now = AC.currentTime, dur = 0.55 + Math.random()*0.4;
+  var bus = isInside ? inBus : outBus;
+  // Filtered noise sweep — lower and slower for opening, sharper for closing
+  var len=Math.floor(AC.sampleRate*dur), buf=AC.createBuffer(1,len,AC.sampleRate), d=buf.getChannelData(0);
+  for(var i=0;i<len;i++) d[i]=(Math.random()*2-1) * Math.pow(1 - i/len, 0.7);
+  var src=AC.createBufferSource(); src.buffer=buf;
+  var bp=AC.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=8;
+  bp.frequency.setValueAtTime(opening?280:520, now);
+  bp.frequency.exponentialRampToValueAtTime(opening?740:180, now+dur);
+  // Two parallel paths — dry to local bus, plus a wet send so it rings out
+  var dry=AC.createGain(); dry.gain.value=0.55;
+  var wet=AC.createGain(); wet.gain.value=0.45;
+  src.connect(bp); bp.connect(dry); dry.connect(bus);
+  bp.connect(wet); wet.connect(reverb);
+  src.start(now);
+  // Solid thud at the end — a real door slam-in-frame
+  var t=AC.createOscillator(), tg=AC.createGain();
+  t.frequency.setValueAtTime(95, now+dur);
+  t.frequency.exponentialRampToValueAtTime(38, now+dur+0.16);
+  tg.gain.setValueAtTime(0.55,now+dur); tg.gain.exponentialRampToValueAtTime(0.001, now+dur+0.22);
+  t.connect(tg); tg.connect(bus);
+  // Thud also goes wet so it booms a bit indoors
+  var twg=AC.createGain(); twg.gain.value=0.6; tg.connect(twg); twg.connect(reverb);
+  t.start(now+dur); t.stop(now+dur+0.24);
+  // High-frequency squeak transient at the start of the creak — gives it bite
+  var sq=AC.createOscillator(), sg=AC.createGain();
+  sq.type='sawtooth';
+  sq.frequency.setValueAtTime(opening?420:680, now);
+  sq.frequency.exponentialRampToValueAtTime(opening?260:340, now+0.12);
+  sg.gain.setValueAtTime(0,now); sg.gain.linearRampToValueAtTime(0.08,now+0.02); sg.gain.exponentialRampToValueAtTime(0.001,now+0.18);
+  sq.connect(sg); sg.connect(bus); sq.start(now); sq.stop(now+0.2);
+}
+
+function playMonsterScreech() {
+  if (!AC) return;
+  var now = AC.currentTime;
+  // Stacked detuned sawtooths sweeping down — primal, dissonant
+  for (var i = 0; i < 5; i++) {
+    var f0 = 740 + Math.random() * 1100;
+    var f1 = f0 * (0.25 + Math.random()*0.15);
+    var o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(f0, now);
+    o.frequency.exponentialRampToValueAtTime(f1, now + 1.6);
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(0.085, now + 0.04 + Math.random()*0.05);
+    g.gain.linearRampToValueAtTime(0, now + 1.7);
+    o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 1.75);
+  }
+  // Sub-bass impact + long tail through reverb
+  var r = AC.createOscillator(), rg = AC.createGain();
+  r.frequency.setValueAtTime(48, now); r.frequency.exponentialRampToValueAtTime(20, now + 2);
+  rg.gain.setValueAtTime(0.55, now); rg.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
+  r.connect(rg); rg.connect(masterGain); r.start(now); r.stop(now + 2.3);
+  var rv = AC.createOscillator(), rvg = AC.createGain();
+  rv.type='triangle'; rv.frequency.value = 110;
+  rvg.gain.setValueAtTime(0.35, now); rvg.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
+  rv.connect(rvg); rvg.connect(reverb); rv.start(now); rv.stop(now + 2.6);
+}
+
+// Continuous low rumble that follows the monster — gain scaled by distance.
+// Created lazily; persists across spawns.
+var _monsterRumble = null;
+function ensureMonsterRumble() {
+  if (!AC || _monsterRumble) return;
+  var o = AC.createOscillator(), o2 = AC.createOscillator();
+  var g = AC.createGain(), bp = AC.createBiquadFilter();
+  o.type = 'sawtooth'; o.frequency.value = 36;
+  o2.type = 'sawtooth'; o2.frequency.value = 36 * 1.013; // detune
+  bp.type = 'lowpass'; bp.frequency.value = 220; bp.Q.value = 0.6;
+  g.gain.value = 0;
+  o.connect(bp); o2.connect(bp); bp.connect(g); g.connect(reverb);
+  o.start(); o2.start();
+  _monsterRumble = { gain: g };
+}
+function setMonsterRumble(target) {
+  if (!_monsterRumble) return;
+  var prev = _monsterRumble.gain.gain.value;
+  _monsterRumble.gain.gain.value = prev + (target - prev) * 0.08;
+}
+
+// Distant unidentifiable sounds — door slams, clangs, very faint footsteps you didn't make.
+function scheduleDistant() {
+  function next() {
+    if (!AC) return;
+    var kind = Math.random();
+    var now = AC.currentTime;
+    var dest = outBus; // always outdoor-flavored even when you're inside (carries through)
+    if (kind < 0.32) {
+      // Distant slam
+      var o=AC.createOscillator(), g=AC.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(48,now); o.frequency.exponentialRampToValueAtTime(22,now+0.4);
+      g.gain.setValueAtTime(0,now); g.gain.linearRampToValueAtTime(0.09,now+0.02); g.gain.exponentialRampToValueAtTime(0.0001,now+0.5);
+      o.connect(g); g.connect(reverb); o.start(now); o.stop(now+0.55);
+    } else if (kind < 0.6) {
+      // Distant metallic clang
+      var f=[180,240,310,420][Math.floor(Math.random()*4)];
+      var o=AC.createOscillator(), g=AC.createGain(), bp=AC.createBiquadFilter();
+      o.type='triangle'; o.frequency.value=f;
+      bp.type='bandpass'; bp.frequency.value=f; bp.Q.value=12;
+      g.gain.setValueAtTime(0.04,now); g.gain.exponentialRampToValueAtTime(0.0001,now+1.2);
+      o.connect(bp); bp.connect(g); g.connect(reverb); o.start(now); o.stop(now+1.3);
+    } else if (kind < 0.85) {
+      // Faint footsteps not your own — pattern of 4-7 muffled hits
+      var steps = 4+Math.floor(Math.random()*4), gap = 0.4+Math.random()*0.18;
+      for (var i=0;i<steps;i++) {
+        var at=now+i*gap;
+        var o=AC.createOscillator(), g=AC.createGain(), lp=AC.createBiquadFilter();
+        lp.type='lowpass'; lp.frequency.value=400;
+        o.frequency.setValueAtTime(120,at); o.frequency.exponentialRampToValueAtTime(45,at+0.08);
+        g.gain.setValueAtTime(0.025,at); g.gain.exponentialRampToValueAtTime(0.0001,at+0.13);
+        o.connect(lp); lp.connect(g); g.connect(reverb); o.start(at); o.stop(at+0.14);
+      }
+    } else {
+      // Whisper — bandpassed noise burst around vocal range
+      var dur=0.9+Math.random()*0.7, len=Math.floor(AC.sampleRate*dur);
+      var buf=AC.createBuffer(1,len,AC.sampleRate), d=buf.getChannelData(0);
+      for(var i=0;i<len;i++) d[i]=(Math.random()*2-1) * Math.sin(Math.PI*i/len);
+      var src=AC.createBufferSource(); src.buffer=buf;
+      var bp=AC.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=900+Math.random()*600; bp.Q.value=4;
+      var g=AC.createGain(); g.gain.value=0.018;
+      src.connect(bp); bp.connect(g); g.connect(reverb); src.start(now);
+    }
+    setTimeout(next, 18000 + Math.random()*45000);
+  }
+  setTimeout(next, 12000 + Math.random()*15000);
+}
+
+// ─── SPATIAL AUDIO (v11) ────────────────────────────────────────────────────
+// Lazy creator for THREE.PositionalAudio nodes attached to scene objects in
+// the new spatial-audio zones. Routes the existing Web Audio synth into each
+// PositionalAudio via setNodeSource so we don't load any audio files. Each
+// source is a synthesized loop matched to its type:
+//   hvac — bandpass-filtered noise around 240Hz, slow LFO-modulated gain.
+//   drip — short tonal pings scheduled by an internal interval, slightly
+//          irregular spacing so it sounds organic.
+//   buzz — bandpass-filtered noise around 4kHz, faint and continuous.
+// The PositionalAudio's panner does the spatialisation; gain falls off
+// inverse-square between refDistance and maxDistance.
+function makeSpatialSource(scene, type, x, y, z, refDist, maxDist, baseGain) {
+  if (!AC || !_audioListener) return null;
+  var pa = new THREE.PositionalAudio(_audioListener);
+  pa.setRefDistance(refDist);
+  pa.setMaxDistance(maxDist);
+  pa.setRolloffFactor(2);
+  pa.setDistanceModel('inverse');
+
+  // Build a small per-source synth subgraph and feed it to the PositionalAudio
+  // panner via setNodeSource. The output never touches outBus/inBus — it goes
+  // through the panner's own gain into AC.destination via THREE's listener.
+  var endNode = AC.createGain();
+  endNode.gain.value = baseGain;
+
+  if (type === 'hvac') {
+    // Two detuned noise bands give a slow whirring character.
+    var len = AC.sampleRate * 2;
+    var buf = AC.createBuffer(1, len, AC.sampleRate);
+    var d = buf.getChannelData(0); for (var i=0;i<len;i++) d[i]=Math.random()*2-1;
+    var src = AC.createBufferSource(); src.buffer = buf; src.loop = true;
+    var bp = AC.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=240; bp.Q.value=1.6;
+    var lfo = AC.createOscillator(); lfo.frequency.value = 0.18;
+    var lg  = AC.createGain(); lg.gain.value = 0.20;
+    var fGain = AC.createGain(); fGain.gain.value = 0.55;
+    src.connect(bp); bp.connect(fGain); fGain.connect(endNode);
+    lfo.connect(lg); lg.connect(fGain.gain);
+    src.start(); lfo.start();
+  } else if (type === 'drip') {
+    // Schedule an irregular drip loop. Each drip is a short sine ping with
+    // a band-pass to give it body.
+    function scheduleDrip(){
+      if (!AC) return;
+      var now = AC.currentTime;
+      var o = AC.createOscillator(), g = AC.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(1100, now);
+      o.frequency.exponentialRampToValueAtTime(380, now + 0.18);
+      g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.6, now+0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, now+0.22);
+      o.connect(g); g.connect(endNode); o.start(now); o.stop(now+0.24);
+      setTimeout(scheduleDrip, 1800 + Math.random()*4200);
+    }
+    setTimeout(scheduleDrip, 800 + Math.random()*2400);
+  } else if (type === 'buzz') {
+    // Fluorescent buzz — bandpass noise around 4kHz with a 60Hz hum mixed in.
+    var len2 = AC.sampleRate * 2;
+    var buf2 = AC.createBuffer(1, len2, AC.sampleRate);
+    var d2 = buf2.getChannelData(0); for (var i=0;i<len2;i++) d2[i]=Math.random()*2-1;
+    var src2 = AC.createBufferSource(); src2.buffer = buf2; src2.loop = true;
+    var bp2 = AC.createBiquadFilter(); bp2.type='bandpass'; bp2.frequency.value=4000; bp2.Q.value=4;
+    var hg = AC.createGain(); hg.gain.value = 0.30;
+    src2.connect(bp2); bp2.connect(hg); hg.connect(endNode);
+    var hum = AC.createOscillator(); hum.frequency.value = 60;
+    var humG = AC.createGain(); humG.gain.value = 0.10;
+    hum.connect(humG); humG.connect(endNode);
+    src2.start(); hum.start();
+  }
+
+  // Hand the gain node off to PositionalAudio as the source.
+  pa.setNodeSource(endNode);
+
+  // PositionalAudio is an Object3D — parent it to a transformed wrapper at
+  // the requested world position so the listener (camera) hears the panner
+  // correctly.
+  var holder = new THREE.Object3D();
+  holder.position.set(x, y, z);
+  holder.add(pa);
+  scene.add(holder);
+  spatialSrcs.push({ type: type, holder: holder, pa: pa });
+  return pa;
+}
+
+// Called by startGame after AudioListener + buildWorld are both ready.
+function ensureSpatialSources(scene) {
+  if (_spatialReady) return;
+  if (!AC || !_audioListener) return;
+  var spots = window.__SPATIAL_SPOTS || [];
+  for (var i=0;i<spots.length;i++) {
+    var s = spots[i];
+    makeSpatialSource(scene, s[0], s[1], s[2], s[3], s[4], s[5], s[6]);
+  }
+  _spatialReady = true;
+}
+
+// ─── WORLD ───────────────────────────────────────────────────────────────────
+var solids = [];   // {minX,maxX,minZ,maxZ}
+var zones  = [];   // {minX,maxX,minZ,maxZ,floorY,ceilY,surface}
+var flickers = []; // {light, baseI, bulbMat, baseEmissive, mode:'lamp'|'fluor', state, t}
+// v11 additions:
+//   spaces  — named interior rooms, registered by buildInterior. Each entry
+//             carries a stable id (b{bx}_{bz}) plus refs[] to the meshes the
+//             memory-drift system can mutate. Without this, there is no notion
+//             of "this room is the same room as last visit."
+//   ghosts  — peripheral-vision NPC presences. Hand-curated positions; each
+//             fades to invisible when looked at. Pure ornament, no AI, no audio.
+//   spatialSrcs — THREE.PositionalAudio nodes attached to new zones. The
+//             existing Web Audio graph is untouched; this is an additive layer
+//             routed through THREE's listener.
+var spaces = [];
+var ghosts = [];
+var spatialSrcs = [];
+
+// Each flicker entry: light is a PointLight, bulbMat is a per-instance clone of
+// the bulb material (so emissive flips don't affect every other lamp).
+function registerFlicker(light, bulbMat, mode) {
+  flickers.push({
+    light: light,
+    baseI: light.intensity,
+    bulbMat: bulbMat,
+    baseEmissive: bulbMat ? bulbMat.emissive.getHex() : 0,
+    mode: mode,
+    state: 'on',           // 'on' | 'flickering' | 'dead'
+    t: 4 + Math.random()*18  // seconds until next event
+  });
+}
+
+function addSolid(cx,cz,hw,hd) { solids.push({minX:cx-hw,maxX:cx+hw,minZ:cz-hd,maxZ:cz+hd}); }
+function addZone(cx,cz,hw,hd,fy,cy,surf) { zones.push({minX:cx-hw,maxX:cx+hw,minZ:cz-hd,maxZ:cz+hd,floorY:fy,ceilY:cy,surface:surf}); }
+function getZone(x,z) {
+  for (var i=0;i<zones.length;i++) {
+    var z2=zones[i];
+    if(x>z2.minX&&x<z2.maxX&&z>z2.minZ&&z<z2.maxZ) return z2;
+  }
+  return null;
+}
+
+// Distance from (x,z) to the nearest solid AABB. Used to drive acoustics:
+// closer walls → more early reflections / stronger reverb send.
+function nearestWallDist(x, z) {
+  var best = 999;
+  for (var i = 0; i < solids.length; i++) {
+    var s = solids[i];
+    var dx = (x < s.minX) ? (s.minX - x) : (x > s.maxX ? x - s.maxX : 0);
+    var dz = (z < s.minZ) ? (s.minZ - z) : (z > s.maxZ ? z - s.maxZ : 0);
+    var d = Math.sqrt(dx*dx + dz*dz);
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+// Approximate "how big is the room I'm in" using the active zone bounds.
+// Smaller area → tighter, drier; bigger → more spacious wash.
+function zoneSize(z) {
+  if (!z) return 0;
+  return (z.maxX-z.minX) * (z.maxZ-z.minZ);
+}
+
+// ─── MEMORY DRIFT ───────────────────────────────────────────────────────────
+// Re-entering a previously visited room produces one small uncanny change —
+// a fluorescent that's now off, the entry door now closed behind you, a chair
+// shifted, a poster turned to face the wall. The change is meant to be felt
+// before it's noticed; never gore, never threatening. This is the most-Liminal
+// version of "the building remembers you."
+//
+// Persistence: localStorage key `liminal_visited` holds {spaceId: {visits, drift}}.
+// Schema is intentionally separate from `liminal_save` and `liminal_opts` so
+// drift state can be cleared independently if it ever becomes overwhelming
+// (clearing localStorage in devtools is the current escape hatch — a UI
+// "reset memory" button is future work).
+//
+// Probability: 55% per revisit (visit ≥ 2). Exactly one variant active per
+// space at a time — drift never stacks. The active variant is sticky for the
+// life of the local-storage entry (it does NOT reroll every visit), so a room
+// that drifts to "light off" stays "light off" until you clear memory.
+var DRIFT_KEY = 'liminal_visited';
+var DRIFT_STATE = (function(){
+  try { var s=localStorage.getItem(DRIFT_KEY); if (s) return JSON.parse(s); } catch(e){}
+  return {};
+})();
+function saveDriftState(){ try { localStorage.setItem(DRIFT_KEY, JSON.stringify(DRIFT_STATE)); } catch(e){} }
+
+// Variant pool. Each variant gets a `whitelist(refs)` predicate — if the space
+// doesn't have the prop the variant needs, the picker skips it. Apply functions
+// must be idempotent (apply once on load → reload → apply again should leave
+// the same observable scene). Revert is unused for now (variants are sticky)
+// but kept on each entry so a future "reset memory" can undo without reload.
+var DRIFT_VARIANTS = [
+  {
+    id: 'light_off',
+    whitelist: function(r){ return r.fluor && r.fluor.bulbMat; },
+    apply: function(r){
+      // Kill the fluorescent's emissive AND its PointLight intensity. The
+      // material is already a per-instance clone (registerFlicker did that)
+      // so this only affects this room.
+      if (r.fluor.bulbMat) r.fluor.bulbMat.emissive.setHex(0x040408);
+      if (r.fluor.light)   r.fluor.light.intensity = 0;
+      // Mark the flicker entry dead so the per-frame flicker system stops
+      // toggling it back on.
+      if (r.fluor.flickerEntry) r.fluor.flickerEntry.state = 'dead-drift';
+    }
+  },
+  {
+    id: 'light_warm',
+    whitelist: function(r){ return r.fluor && r.fluor.bulbMat && r.fluor.light; },
+    apply: function(r){
+      // Cool fluorescent shifts to a sodium-warm tint — same brightness, wrong
+      // colour temperature. Reads as "the bulb was replaced with a different one."
+      r.fluor.bulbMat.color.setHex(0xbb8844);
+      r.fluor.bulbMat.emissive.setHex(0x664422);
+      r.fluor.light.color.setHex(0xbb7733);
+    }
+  },
+  {
+    id: 'door_closed',
+    whitelist: function(r){ return r.door; },
+    apply: function(r){
+      // Force the entry door to its closed state. Not soft-locking — the
+      // player still has KeyE. Just unsettling that it's closed when they
+      // remember leaving it open.
+      r.door.open = false;
+      r.door.targetAngle = 0;
+      r.door.currentAngle = 0;
+      r.door.pivot.rotation.y = 0;
+    }
+  },
+  {
+    id: 'chair_shift',
+    whitelist: function(r){ return r.movable && r.movable.length > 0; },
+    apply: function(r){
+      // Pick the first registered movable group and translate it on a stable
+      // axis derived from the space id, so the same room always shifts the
+      // same way (otherwise reload would scramble it).
+      var g = r.movable[0];
+      var seed = 0; for (var i=0;i<r.id.length;i++) seed = (seed*31 + r.id.charCodeAt(i))|0;
+      var axis = (seed & 1) ? 'x' : 'z';
+      var sign = (seed & 2) ? 1 : -1;
+      var d = 0.9 + ((seed>>>2) & 7) * 0.05;
+      g.position[axis] += sign * d;
+    }
+  },
+  {
+    id: 'poster_flip',
+    whitelist: function(r){ return r.poster; },
+    apply: function(r){
+      // Flip a wall poster 180° on its mounted axis. The face you knew is
+      // now turned into the wall.
+      r.poster.rotation.y += Math.PI;
+    }
+  },
+  {
+    id: 'sign_dim',
+    whitelist: function(r){ return r.sign; },
+    apply: function(r){
+      // Sign goes dark — its emissive backlight disappears.
+      if (r.sign.material && r.sign.material.emissive) {
+        r.sign.material = r.sign.material.clone();
+        r.sign.material.emissive.setHex(0x020306);
+        r.sign.material.color.setHex(0x080a0e);
+      }
+    }
+  }
+];
+
+// Register a space for drift. Called from buildInterior. refs is mutable —
+// scatterInteriorProps may add to it (e.g. movable, poster, sign).
+function registerSpace(id, cx, cz, bw, bd, fy, refs) {
+  spaces.push({ id:id, cx:cx, cz:cz, bw:bw, bd:bd, fy:fy, refs:refs, applied:null });
+}
+
+// Apply existing drift state for a space at boot — if the player has visited
+// this room before AND a variant was previously rolled, re-apply it now so it's
+// already in place when they walk in. (Drift on revisit otherwise wouldn't be
+// observable until they stepped through the door.)
+function applyExistingDrift(space) {
+  if (!opts.drift) return;
+  var rec = DRIFT_STATE[space.id];
+  if (!rec || !rec.drift) return;
+  var v = null;
+  for (var i=0;i<DRIFT_VARIANTS.length;i++) if (DRIFT_VARIANTS[i].id === rec.drift) { v = DRIFT_VARIANTS[i]; break; }
+  if (!v) return;
+  if (v.whitelist && !v.whitelist(space.refs)) return;
+  try { v.apply(space.refs); space.applied = v.id; } catch(e){}
+}
+
+// Called when the player enters a space (zone change). Increments visit count;
+// rolls a drift variant on the second-or-later visit if none is currently
+// stored. The roll uses the procgen modifier to bias probability — see
+// PROCGEN MODIFIERS below.
+function enterSpace(space) {
+  if (!opts.drift) return;
+  var rec = DRIFT_STATE[space.id] || { visits: 0, drift: null };
+  rec.visits = (rec.visits|0) + 1;
+  rec.lastSeen = Date.now();
+  // Roll drift only on revisit (visits >= 2) and only if not already drifted.
+  if (!rec.drift && rec.visits >= 2) {
+    var p = 0.55 * (window.__DRIFT_BIAS || 1);
+    if (Math.random() < p) {
+      // Pick a whitelisted variant at random
+      var pool = [];
+      for (var i=0;i<DRIFT_VARIANTS.length;i++) {
+        var v = DRIFT_VARIANTS[i];
+        if (!v.whitelist || v.whitelist(space.refs)) pool.push(v);
+      }
+      if (pool.length) {
+        var pick = pool[Math.floor(Math.random()*pool.length)];
+        try { pick.apply(space.refs); space.applied = pick.id; rec.drift = pick.id; } catch(e){}
+      }
+    }
+  }
+  DRIFT_STATE[space.id] = rec;
+  saveDriftState();
+}
+
+// ─── PROCGEN MODIFIERS ──────────────────────────────────────────────────────
+// Per-session-only, low-impact procedural variation. NOT room-level procgen —
+// no new geometry, no new spaces. This just tweaks ambient parameters and
+// biases drift probability so two consecutive sessions feel slightly different
+// without ever producing visibly new content. Cap is 3 modifiers per session.
+//
+// The seed is regenerated on every page load (per-session, not daily) so
+// reloading a session is the simplest way to "feel different" again. Stored
+// on window so the few subsystems that read it (drift bias, fog tint) all
+// see the same values.
+window.__SESSION_SEED = ((Date.now() ^ 0x9E3779B9) >>> 0);
+function _procRng() {
+  // Local LCG seeded by the session value — does not disturb the global srng.
+  window.__SESSION_SEED = (window.__SESSION_SEED * 1664525 + 1013904223) >>> 0;
+  return window.__SESSION_SEED / 0xffffffff;
+}
+function applyProcgenModifiers() {
+  var picked = 0;
+  // 1) Drift probability bias — most sessions stay at 1.0; ~25% bias up to
+  //    1.4 so a "haunted" session feels slightly more changed than usual.
+  if (_procRng() < 0.25) { window.__DRIFT_BIAS = 1.0 + _procRng()*0.4; picked++; }
+  else                    { window.__DRIFT_BIAS = 1.0; }
+  // 2) Fog hue shift — very small. Default fog colour stays as the renderer
+  //    set it; this nudges r/g/b independently by ±6/255.
+  if (_procRng() < 0.30 && picked < 3) {
+    window.__FOG_TINT = {
+      r: (_procRng()-0.5) * 0.024,
+      g: (_procRng()-0.5) * 0.024,
+      b: (_procRng()-0.5) * 0.024
+    };
+    picked++;
+  }
+  // 3) Lamp intensity scalar — 90% sessions = 1.0; 10% chance of a slightly
+  //    dimmer night (0.85). Multiplied into __LAMP_MUL inside startGame.
+  if (_procRng() < 0.10 && picked < 3) { window.__LAMP_PROCGEN = 0.85; picked++; }
+  else                                  { window.__LAMP_PROCGEN = 1.0; }
+}
+applyProcgenModifiers();
+
+// ─── MONSTER ─────────────────────────────────────────────────────────────────
+var monster = null;                       // active monster or null
+var monsterSpawnTimer = 60 + Math.random()*40;  // first spawn 60–100 s in
+var monsterDespawnT  = 0;
+var dead = false;
+
+function lineHitsAABB(x0,z0,x1,z1,s){
+  var dx=x1-x0, dz=z1-z0, tMin=0, tMax=1;
+  if (Math.abs(dx) > 1e-6) {
+    var t1=(s.minX-x0)/dx, t2=(s.maxX-x0)/dx;
+    var lo=Math.min(t1,t2), hi=Math.max(t1,t2);
+    if(lo>tMin) tMin=lo;
+    if(hi<tMax) tMax=hi;
+  } else if (x0<s.minX || x0>s.maxX) return false;
+  if (Math.abs(dz) > 1e-6) {
+    var u1=(s.minZ-z0)/dz, u2=(s.maxZ-z0)/dz;
+    var lo2=Math.min(u1,u2), hi2=Math.max(u1,u2);
+    if(lo2>tMin) tMin=lo2;
+    if(hi2<tMax) tMax=hi2;
+  } else if (z0<s.minZ || z0>s.maxZ) return false;
+  return tMin<=tMax && tMax>=0 && tMin<=1;
+}
+function losBlocked(x0,z0,x1,z1){
+  for(var i=0;i<solids.length;i++) if(lineHitsAABB(x0,z0,x1,z1,solids[i])) return true;
+  return false;
+}
+
+function createMonsterMesh() {
+  var grp = new THREE.Group();
+  var skin = new THREE.MeshLambertMaterial({color:0x0a0a10});
+  // Body (tall, gaunt)
+  var body = new THREE.Mesh(new THREE.BoxGeometry(0.48, 1.45, 0.30), skin);
+  body.position.y = 1.05; grp.add(body);
+  // Slight neck
+  var neck = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.18, 0.16), skin);
+  neck.position.y = 1.85; grp.add(neck);
+  // Head (slightly elongated)
+  var head = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.42, 0.36), skin);
+  head.position.y = 2.10; grp.add(head);
+  // Eyes — pale, faintly emissive so they catch the dark
+  var eyeMat = new THREE.MeshLambertMaterial({color:0xddccaa, emissive:0x554022});
+  var leye = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.04, 0.02), eyeMat);
+  leye.position.set(-0.07, 2.13, 0.18); grp.add(leye);
+  var reye = leye.clone(); reye.position.x = 0.07; grp.add(reye);
+  // Long arms with tiny hands at the end — unsettling proportions
+  var arm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.55, 0.12), skin);
+  var lArm = arm.clone(); lArm.position.set(-0.32, 1.05, 0); grp.add(lArm);
+  var rArm = arm.clone(); rArm.position.set( 0.32, 1.05, 0); grp.add(rArm);
+  var hand = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.20, 0.13), skin);
+  var lHand = hand.clone(); lHand.position.set(-0.32, 0.18, 0); grp.add(lHand);
+  var rHand = hand.clone(); rHand.position.set( 0.32, 0.18, 0); grp.add(rHand);
+  // Legs
+  var leg = new THREE.Mesh(new THREE.BoxGeometry(0.17, 1.05, 0.17), skin);
+  var lLeg = leg.clone(); lLeg.position.set(-0.13, 0.52, 0); grp.add(lLeg);
+  var rLeg = leg.clone(); rLeg.position.set( 0.13, 0.52, 0); grp.add(rLeg);
+  return {
+    grp:grp, body:body, head:head,
+    lArm:lArm, rArm:rArm, lLeg:lLeg, rLeg:rLeg,
+    lHand:lHand, rHand:rHand,
+    eyeMat:eyeMat,
+    walkPhase:0, lunge:0,
+    lastSeenX:0, lastSeenZ:0
+  };
+}
+
+function spawnMonster(scene, px, pz) {
+  if (monster) return;
+  for (var tries=0; tries<10; tries++) {
+    var angle = Math.random()*Math.PI*2;
+    var dist  = 40 + Math.random()*18;
+    var sx = px + Math.cos(angle)*dist;
+    var sz = pz + Math.sin(angle)*dist;
+    // Reject if inside a solid (with margin)
+    var bad=false;
+    for (var i=0;i<solids.length;i++){
+      var s=solids[i];
+      if (sx>s.minX-1 && sx<s.maxX+1 && sz>s.minZ-1 && sz<s.maxZ+1){ bad=true; break; }
+    }
+    if (bad) continue;
+    var m = createMonsterMesh();
+    m.grp.position.set(sx, 0, sz);
+    m.lastSeenX = px; m.lastSeenZ = pz;
+    scene.add(m.grp);
+    monster = m;
+    ensureMonsterRumble();
+    // A distant low impact telegraphs that something just arrived
+    if (AC) {
+      var now = AC.currentTime;
+      var o=AC.createOscillator(), g=AC.createGain();
+      o.frequency.setValueAtTime(58,now); o.frequency.exponentialRampToValueAtTime(22,now+1.0);
+      g.gain.setValueAtTime(0.32,now); g.gain.exponentialRampToValueAtTime(0.001,now+1.4);
+      o.connect(g); g.connect(reverb); o.start(now); o.stop(now+1.5);
+    }
+    return;
+  }
+}
+
+function despawnMonster(scene){
+  if (!monster) return;
+  scene.remove(monster.grp);
+  monster = null;
+  monsterDespawnT = 0;
+  monsterSpawnTimer = 90 + Math.random()*120;
+  setMonsterRumble(0);
+}
+
+function updateMonster(scene, dt, px, pz, onCaught) {
+  if (!monster) return;
+  var m = monster;
+  var dx = px - m.grp.position.x, dz = pz - m.grp.position.z;
+  var d = Math.sqrt(dx*dx + dz*dz);
+
+  // Despawn if player runs very far
+  if (d > 90) {
+    monsterDespawnT += dt;
+    if (monsterDespawnT > 6) { despawnMonster(scene); return; }
+  } else monsterDespawnT = 0;
+
+  // LOS gates "knowledge" — when blocked, pursue last seen position
+  var sees = !losBlocked(m.grp.position.x, m.grp.position.z, px, pz);
+  if (sees) { m.lastSeenX = px; m.lastSeenZ = pz; }
+  var tx = sees ? px : m.lastSeenX;
+  var tz = sees ? pz : m.lastSeenZ;
+  var tdx = tx - m.grp.position.x, tdz = tz - m.grp.position.z;
+  var td = Math.sqrt(tdx*tdx + tdz*tdz);
+  if (td < 0.001) return;
+
+  // Lunge when close and visible — a brief speed burst
+  m.lunge = (sees && d < 3.2) ? 1 : Math.max(0, m.lunge - dt*1.5);
+  var speed = sees ? (4.5 + m.lunge*2.5) : 3.0;
+
+  var ux = tdx/td, uz = tdz/td;
+  var nx = m.grp.position.x + ux * speed * dt;
+  var nz = m.grp.position.z + uz * speed * dt;
+
+  // Slide along solids
+  for (var i=0;i<solids.length;i++){
+    var s=solids[i];
+    var cx=(s.minX+s.maxX)/2, cz=(s.minZ+s.maxZ)/2;
+    var hw=(s.maxX-s.minX)/2 + 0.32, hd=(s.maxZ-s.minZ)/2 + 0.32;
+    var ddx=nx-cx, ddz=nz-cz;
+    if (Math.abs(ddx)<hw && Math.abs(ddz)<hd){
+      var ox=hw-Math.abs(ddx), oz=hd-Math.abs(ddz);
+      if (ox<oz) nx += ddx>=0 ? ox : -ox;
+      else        nz += ddz>=0 ? oz : -oz;
+    }
+  }
+  m.grp.position.x = nx;
+  m.grp.position.z = nz;
+  m.grp.rotation.y = Math.atan2(tdx, tdz);
+
+  // Walk animation: faster swing when lunging
+  var swingRate = 6 + m.lunge*4;
+  m.walkPhase += dt * swingRate;
+  var amp = 0.45 + m.lunge*0.25;
+  var s2 = Math.sin(m.walkPhase) * amp;
+  m.lLeg.rotation.x =  s2;
+  m.rLeg.rotation.x = -s2;
+  m.lArm.rotation.x = -s2*0.7;
+  m.rArm.rotation.x =  s2*0.7;
+  m.grp.position.y = Math.abs(Math.sin(m.walkPhase*2)) * 0.045;
+  m.head.rotation.x = m.lunge*0.35;
+
+  // Eyes glow more when very close
+  var glow = Math.min(1, Math.max(0.25, 1 - d/14));
+  m.eyeMat.emissive.setRGB(glow*0.55, glow*0.38, glow*0.10);
+
+  // Rumble loudens with proximity (1/d falloff, capped)
+  setMonsterRumble(Math.min(0.22, 6 / Math.max(6, d)));
+
+  // CATCH
+  if (d < 1.4 && !dead) {
+    onCaught && onCaught();
+  }
+}
+
+// Seeded RNG
+var _seed = 42;
+function srng(s) { _seed=s; }
+function rnd() { _seed=(_seed*1664525+1013904223)&0xffffffff; return (_seed>>>0)/0xffffffff; }
+function rr(a,b) { return a+rnd()*(b-a); }
+function ri(a,b) { return Math.floor(a+rnd()*(b-a+1)); }
+
+var M; // materials — set in startGame
+
+function buildWorld(scene) {
+  // Ground
+  var g=new THREE.Mesh(new THREE.PlaneGeometry(600,600),M.ground);
+  g.rotation.x=-Math.PI/2; scene.add(g);
+
+  // ── GROUND SURFACE DETAIL ──
+  var matRoad    = new THREE.MeshLambertMaterial({color:0x1a1a20}); // asphalt
+  var matRoadLine= new THREE.MeshLambertMaterial({color:0x1c1c1a}); // barely visible
+  var matGrass   = new THREE.MeshLambertMaterial({color:0x0e120a}); // dead grass
+  var matDirt    = new THREE.MeshLambertMaterial({color:0x111009}); // dirt
+  var matConc    = new THREE.MeshLambertMaterial({color:0x1e1e26}); // pavement slab
+  var matCrack   = new THREE.MeshLambertMaterial({color:0x111118}); // crack/gap
+
+  var BLOCK=18, R=4; // match world gen
+  var roadW = 7;     // road width
+
+  // Roads along every 3rd block (streets)
+  for(var bx=-R-1; bx<=R+1; bx++) {
+    if(bx%3!==0) continue;
+    var rx = bx*BLOCK;
+    // N-S road strip
+    var road=new THREE.Mesh(new THREE.BoxGeometry(roadW, 0.01, (R*2+2)*BLOCK), matRoad);
+    road.position.set(rx, 0.003, 0); scene.add(road);
+    // Centre line (faded dashes)
+    for(var dz=-R*BLOCK; dz<R*BLOCK; dz+=4) {
+      var dash=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.004,1.4), matRoadLine);
+      dash.position.set(rx, 0.005, dz); scene.add(dash);
+    }
+  }
+  for(var bz=-R-1; bz<=R+1; bz++) {
+    if(bz%3!==0) continue;
+    var rz = bz*BLOCK;
+    // E-W road strip
+    var road2=new THREE.Mesh(new THREE.BoxGeometry((R*2+2)*BLOCK, 0.01, roadW), matRoad);
+    road2.position.set(0, 0.003, rz); scene.add(road2);
+    for(var dx=-R*BLOCK; dx<R*BLOCK; dx+=4) {
+      var dash2=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.004,0.15), matRoadLine);
+      dash2.position.set(dx, 0.005, rz); scene.add(dash2);
+    }
+  }
+
+  // Pavement / sidewalk strips along building edges
+  var sidewalkW = 2.2;
+  var concH = 0.055;
+  for(var bx2=-R; bx2<=R; bx2++) for(var bz2=-R; bz2<=R; bz2++) {
+    if(bx2%3===0||bz2%3===0) continue;
+    var wx2=bx2*BLOCK, wz2=bz2*BLOCK;
+    // Sidewalk pad around each building block
+    var sw=new THREE.Mesh(new THREE.BoxGeometry(BLOCK-roadW-0.5, concH, BLOCK-roadW-0.5), matConc);
+    sw.position.set(wx2, concH/2, wz2); scene.add(sw);
+    // Cracks — thin dark lines across the slab
+    for(var ci=0; ci<2; ci++) {
+      var cr=new THREE.Mesh(new THREE.BoxGeometry(BLOCK-roadW-0.5,concH+0.005,0.06), matCrack);
+      cr.position.set(wx2, concH/2, wz2+(ci-0.5)*3.5); scene.add(cr);
+    }
+  }
+
+  // Grass/dirt patches in gaps between buildings — seeded
+  var _gs=99;
+  function grnd(){_gs=(_gs*1664525+1013904223)&0xffffffff;return(_gs>>>0)/0xffffffff;}
+  for(var gi=0;gi<80;gi++){
+    var gx=(grnd()-.5)*R*2*BLOCK, gz=(grnd()-.5)*R*2*BLOCK;
+    var gw=grnd()*1.8+0.4, gd=grnd()*1.8+0.4;
+    var gmat=grnd()>0.55?matGrass:matDirt;
+    var gp=new THREE.Mesh(new THREE.BoxGeometry(gw,0.025,gd),gmat);
+    gp.position.set(gx,0.002,gz); scene.add(gp);
+  }
+
+  // Kerb/curb edges along roads — low raised strips
+  var kerbH=0.07, kerbW=0.18;
+  for(var bx3=-R-1;bx3<=R+1;bx3++){
+    if(bx3%3!==0) continue;
+    var kx=bx3*BLOCK;
+    [-1,1].forEach(function(side){
+      var k=new THREE.Mesh(new THREE.BoxGeometry(kerbW,(R*2+2)*BLOCK,kerbH),matConc);
+      k.rotation.x=Math.PI/2; // lay flat along road edge
+      var kb=new THREE.Mesh(new THREE.BoxGeometry(kerbW,kerbH,(R*2+2)*BLOCK),matConc);
+      kb.position.set(kx+side*(roadW/2+kerbW/2), kerbH/2, 0); scene.add(kb);
+    });
+  }
+  for(var bz3=-R-1;bz3<=R+1;bz3++){
+    if(bz3%3!==0) continue;
+    var kz=bz3*BLOCK;
+    [-1,1].forEach(function(side){
+      var kb2=new THREE.Mesh(new THREE.BoxGeometry((R*2+2)*BLOCK,kerbH,kerbW),matConc);
+      kb2.position.set(0, kerbH/2, kz+side*(roadW/2+kerbW/2)); scene.add(kb2);
+    });
+  }
+
+
+
+  for(var bx=-R;bx<=R;bx++) for(var bz=-R;bz<=R;bz++) {
+    if(bx%3===0||bz%3===0) continue;
+    var wx=bx*BLOCK+rr(-0.5,0.5), wz=bz*BLOCK+rr(-0.5,0.5);
+    srng(Math.abs(bx*7919+bz*6271+12345));
+    var res=makeBuilding(scene,wx,wz);
+    if(res.bw>=5&&res.bd>=5) buildInterior(scene,wx,wz,res.bw,res.bd,'b'+bx+'_'+bz);
+    // Street props near this building
+    scatterStreetProps(scene, wx+rr(-res.bw/2-1, res.bw/2+1), wz+rr(-res.bd/2-1, res.bd/2+1));
+  }
+  // Street lamps at intersection corners — pole sits just past the curb,
+  // arm extends back over the road so the bulb hangs above the asphalt.
+  // Each spot: [intersection_x, intersection_z, corner_x_sign, corner_z_sign]
+  var lampSpots=[
+    [0,0, 1, 1],[0,0,-1, 1],[0,0, 1,-1],[0,0,-1,-1],
+    [-54,0,-1, 1],[54,0, 1,-1],[0,-54, 1,-1],[0,54,-1, 1]
+  ];
+  var poleOff = roadW/2 + 0.7;
+  var armLen  = 1.4;
+  lampSpots.forEach(function(lp){
+    var ix=lp[0], iz=lp[1], sx=lp[2], sz=lp[3];
+    var lx = ix + sx*poleOff;
+    var lz = iz + sz*poleOff;
+    var armDx = -sx;
+    var post=new THREE.Mesh(new THREE.BoxGeometry(0.14,4.5,0.14),M.metal);
+    post.position.set(lx,2.25,lz); scene.add(post);
+    var arm=new THREE.Mesh(new THREE.BoxGeometry(armLen,0.07,0.07),M.metal);
+    arm.position.set(lx + armDx*armLen/2, 4.5, lz); scene.add(arm);
+    // Per-lamp clone so flicker doesn't affect every other lamp's emissive
+    var bulbMat = M.lamp.clone();
+    var bulb=new THREE.Mesh(new THREE.BoxGeometry(0.35,0.28,0.35), bulbMat);
+    bulb.position.set(lx + armDx*(armLen-0.2), 4.38, lz); scene.add(bulb);
+    // Lamp intensity: full strength on desktop, dialled back on mobile
+    // (LAMP_MUL ≈ 0.65) because the strong ambient fill there means the
+    // lamp doesn't need to be as bright to read as a pool of warm light.
+    var _lm = window.__LAMP_MUL || 1;
+    var sl=new THREE.PointLight(0xaa7744, 9.0 * _lm, 16);
+    sl.position.set(lx + armDx*(armLen-0.2), 3.8, lz); scene.add(sl);
+    var base=new THREE.Mesh(new THREE.BoxGeometry(0.36,0.3,0.36),M.metalDark);
+    base.position.set(lx,0.15,lz); scene.add(base);
+    addSolid(lx, lz, 0.12, 0.12);
+    registerFlicker(sl, bulbMat, 'lamp');
+  });
+
+  // Walkways
+  for(var i=0;i<10;i++) {
+    srng(i*9973+777);
+    var cx=rr(-70,70),cz=rr(-70,70),len=rr(10,38),h=rr(4,12),hz=rnd()>0.5;
+    var wm=new THREE.Mesh(new THREE.BoxGeometry(hz?len:1.5,0.4,hz?1.5:len),M.walkway);
+    wm.position.set(cx,h,cz); scene.add(wm);
+    for(var s=0;s<3;s++) {
+      var off=(s-1)*(len/3);
+      var sp=new THREE.Mesh(new THREE.BoxGeometry(0.3,h,0.3),M.brut2);
+      sp.position.set(cx+(hz?off:0),h/2,cz+(hz?0:off)); scene.add(sp);
+    }
+  }
+
+  // ─── DISTANT SKYLINE ──────────────────────────────────────────────────
+  // A sparse ring of taller, simpler silhouettes around the dense core to
+  // give the city a sense of extending past the playable area. No interiors,
+  // no collision (player can't reach them through the fog), just blocks +
+  // optional roof masts / lit window panels. Use a dedicated seeded RNG so
+  // the ring is stable across reloads regardless of the main world seed.
+  var sklSeed = 314159;
+  function sknd(){ sklSeed=(sklSeed*1664525+1013904223)&0xffffffff; return (sklSeed>>>0)/0xffffffff; }
+  function skrr(a,b){ return a + sknd()*(b-a); }
+  var skyMats = [M.brut1, M.brut2, M.brut3, M.conc1, M.conc2, M.conc3];
+  // Mobile gets ~2/3 the skyline density to keep draw-call count manageable.
+  var SK_COUNT = IS_TOUCH ? 24 : 36;
+  for (var sk=0; sk<SK_COUNT; sk++) {
+    // Distribute roughly evenly around the compass with jitter so it doesn't
+    // read as a regular ring.
+    var ang = (sk / SK_COUNT) * Math.PI * 2 + skrr(-0.10, 0.10);
+    var dist = skrr(85, 165);
+    var sx = Math.cos(ang) * dist;
+    var sz = Math.sin(ang) * dist;
+    // ~15% of the ring is a lattice power tower instead of a building.
+    if (sknd() < 0.15) {
+      makePowerTower(scene, sx, sz, skrr(28, 55));
+      continue;
+    }
+    var sw = skrr(7, 16), sd = skrr(7, 16), sh = skrr(22, 70);
+    var smat = skyMats[Math.floor(sknd()*skyMats.length)];
+    var b = new THREE.Mesh(new THREE.BoxGeometry(sw, sh, sd), smat);
+    b.position.set(sx, sh/2, sz); scene.add(b);
+    // Roof parapet (cheap silhouette boost)
+    var pH=0.5;
+    var pp = new THREE.Mesh(new THREE.BoxGeometry(sw+0.4, pH, sd+0.4), smat);
+    pp.position.set(sx, sh+pH/2, sz); scene.add(pp);
+    // ~40% chance of a stub or stair-tower extension on top
+    if (sknd() < 0.40) {
+      var sw2=sw*skrr(0.30,0.65), sd2=sd*skrr(0.30,0.65), sh2=skrr(4,14);
+      var b2 = new THREE.Mesh(new THREE.BoxGeometry(sw2, sh2, sd2), smat);
+      b2.position.set(sx + skrr(-1,1), sh + sh2/2, sz + skrr(-1,1));
+      scene.add(b2);
+    }
+    // ~25% chance of an antenna mast (tiny silhouette)
+    if (sknd() < 0.25) {
+      var ah = skrr(3, 8);
+      var ant = new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,ah,4), M.metal);
+      ant.position.set(sx + skrr(-sw*0.3, sw*0.3), sh + ah/2, sz + skrr(-sd*0.3, sd*0.3));
+      scene.add(ant);
+      var beacon = new THREE.Mesh(new THREE.BoxGeometry(0.18,0.18,0.18), M.beacon);
+      beacon.position.set(ant.position.x, sh + ah, ant.position.z);
+      scene.add(beacon);
+    }
+    // ~30% chance of a single lit window strip on a random face — gives the
+    // distant city occasional pinpricks of life through the fog
+    if (sknd() < 0.30) {
+      var lw = sw*skrr(0.5, 0.85), lh = sh*skrr(0.4, 0.7);
+      var win = new THREE.Mesh(new THREE.BoxGeometry(lw, lh, 0.12), M.winLit);
+      var face = Math.floor(sknd()*4);
+      if (face === 0)      win.position.set(sx, sh*0.5, sz - sd/2 - 0.06);
+      else if (face === 1) { win.rotation.y = Math.PI/2; win.position.set(sx + sw/2 + 0.06, sh*0.5, sz); }
+      else if (face === 2) { win.rotation.y = Math.PI/2; win.position.set(sx - sw/2 - 0.06, sh*0.5, sz); }
+      else                 win.position.set(sx, sh*0.5, sz + sd/2 + 0.06);
+      scene.add(win);
+    }
+  }
+
+  // ─── BUS SHELTERS ─────────────────────────────────────────────────────
+  // Place at four asymmetric corners of the dense grid where the road
+  // crosses the city edge. Each shelter sits on the sidewalk facing the
+  // road. PointLight inside each — one of the few new fixtures that does.
+  var stopSpots = [
+    [-3*BLOCK + 5,  3*BLOCK - 1,  Math.PI    ],
+    [ 3*BLOCK - 5, -3*BLOCK + 1,  0          ],
+    [-6*BLOCK + 4,  0,            Math.PI/2  ],
+    [ 6*BLOCK - 4,  0,           -Math.PI/2  ]
+  ];
+  stopSpots.forEach(function(s){ makeBusStop(scene, s[0], s[1], s[2]); });
+
+  // ─── LONE WATCHERS ────────────────────────────────────────────────────
+  // Static humanoids placed at fixed seeded positions. Some on rooftops of
+  // the skyline ring (visible at distance, never moving), some on the
+  // ground at the end of long sight-lines down a road. Yume Nikki / NaissancE
+  // dread ornaments — they exist to be seen.
+  var watcherSpots = [
+    // [x, y, z, facing-yaw]
+    [ 3*BLOCK*1.5, 0,          -3*BLOCK*1.5, -Math.PI*0.25 ], // street end
+    [-3*BLOCK*1.5, 0,           3*BLOCK*1.5,  Math.PI*0.75 ],
+    [ 0,           0,          -6*BLOCK + 3,  Math.PI       ],
+    [ 60,         24,          -55,           Math.PI*1.2   ], // on a skyline rooftop
+    [-72,         18,           48,          -Math.PI*0.3   ],
+    [ 95,          0,          -10,           Math.PI*0.6   ]  // far down a vista
+  ];
+  watcherSpots.forEach(function(w){ makeLoneWatcher(scene, w[0], w[1], w[2], w[3]); });
+
+  // ─── PRESENCES (peripheral ghosts) ────────────────────────────────────
+  // Hand-curated, never-aggressive figures placed at the end of long sight
+  // lines. Each one fades to invisible the moment the player looks straight
+  // at it — so the world is full of presences that you can never quite
+  // confirm. Same lone-watcher silhouette family, deliberately not posed
+  // monstrously. 4 total; mobile and desktop both run them (cost is ~4
+  // extra small-mesh draws + a per-frame dot product per ghost).
+  var ghostSpots = [
+    // [x, y, z, facing] — picked to sit in fog/distance corners or down
+    // long avenues, never at player-spawn. Each falls inside the playable
+    // grid so they're approachable but rarely directly in the path.
+    [  3*BLOCK + 4,    0,  -2*BLOCK - 1,  -Math.PI*0.55 ], // street vista
+    [ -2*BLOCK - 5,    0,   2*BLOCK + 6,   Math.PI*0.20 ], // alley between blocks
+    [  6*BLOCK - 8,    0,   3*BLOCK + 5,  -Math.PI*0.85 ], // far corner
+    [  0,              0,   6*BLOCK - 4,   Math.PI       ]  // straight down centre vista
+  ];
+  ghostSpots.forEach(function(g){ makeGhostPresence(scene, g[0], g[1], g[2], g[3]); });
+
+  // ─── NEW SPATIAL-AUDIO ZONES ──────────────────────────────────────────
+  // 1-3 hand-placed spatial sources tied to small "new zones" outside any
+  // existing interior. Sources use THREE.PositionalAudio with the existing
+  // Web Audio synth feeding into setNodeSource() so we don't load any
+  // audio files. Activated lazily inside startGame after AudioListener
+  // is wired to the camera. Hand-curated coordinates on quiet sidewalks
+  // where the loop won't compete with monster rumble.
+  //
+  // Existing zones are deliberately NOT retagged — the spec defers a full
+  // tag pass to a later snapshot. This is just additive flavor in spots
+  // the player will pass through.
+  window.__SPATIAL_SPOTS = [
+    // [type, x, y, z, refDist, maxDist, baseGain]
+    ['hvac',  -3*BLOCK - 3,  3.6,  -3*BLOCK - 3,  2.0, 14, 0.45],
+    ['drip',   3*BLOCK + 3,  1.3,   3*BLOCK + 3,  1.4, 10, 0.55],
+    ['buzz',  -3*BLOCK - 5,  2.2,   3*BLOCK + 5,  1.6, 11, 0.40]
+  ];
+}
+
+// Ghost presence — translucent, monochrome, no animation. Same skeleton as
+// makeLoneWatcher but with a per-instance material clone (so opacity ramps
+// per-ghost) and a flag that the frame-loop fade system reads.
+function makeGhostPresence(scene, cx, cy, cz, facing) {
+  var grp = new THREE.Group();
+  // Per-ghost material — start invisible. The frame loop fades it in when
+  // the ghost is in the player's peripheral vision and out when looked at.
+  var skin = new THREE.MeshLambertMaterial({
+    color: 0x1a1a26,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false
+  });
+  var body = new THREE.Mesh(new THREE.BoxGeometry(0.40, 1.36, 0.26), skin);
+  body.position.y = 0.98; grp.add(body);
+  var head = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.30, 0.28), skin);
+  head.position.y = 1.80; grp.add(head);
+  var legL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.96, 0.16), skin);
+  legL.position.set(-0.09, 0.48, 0); grp.add(legL);
+  var legR = legL.clone(); legR.position.x = 0.09; grp.add(legR);
+  var armL = new THREE.Mesh(new THREE.BoxGeometry(0.10, 1.16, 0.10), skin);
+  armL.position.set(-0.25, 0.96, 0); grp.add(armL);
+  var armR = armL.clone(); armR.position.x = 0.25; grp.add(armR);
+  grp.position.set(cx, cy, cz);
+  grp.rotation.y = facing || 0;
+  grp.visible = false; // start hidden; per-frame fade flips it on when peripheral
+  scene.add(grp);
+  // Each ghost tracks its current opacity so the fade is smoothed over frames.
+  // The cap of 0.34 is intentionally low — they should read as "presence", not
+  // "person" — and is *never* exceeded even when fully in peripheral vision.
+  ghosts.push({ grp: grp, mat: skin, opacity: 0, capOpacity: 0.34 });
+}
+
+// Build exterior box with no south face below groundFloorH (door opening height)
+// so player can walk through without hitting the exterior mesh
+function addExtBox(grp, w, h, d, mat, DH) {
+  var t=0.3; // panel thickness
+  // North face
+  var n=new THREE.Mesh(new THREE.BoxGeometry(w,h,t),mat); n.position.set(0,h/2,-d/2); grp.add(n);
+  // East face
+  var e=new THREE.Mesh(new THREE.BoxGeometry(t,h,d),mat); e.position.set(w/2,h/2,0); grp.add(e);
+  // West face
+  var wf=new THREE.Mesh(new THREE.BoxGeometry(t,h,d),mat); wf.position.set(-w/2,h/2,0); grp.add(wf);
+  // Top cap
+  var top=new THREE.Mesh(new THREE.BoxGeometry(w,t,d),mat); top.position.set(0,h-t/2,0); grp.add(top);
+  // South face — split around door opening: left seg, right seg, lintel
+  var DW=1.4, seg=(w/2-DW/2);
+  if(seg>0.05){
+    var sl=new THREE.Mesh(new THREE.BoxGeometry(seg,h,t),mat); sl.position.set(-DW/2-seg/2,h/2,d/2); grp.add(sl);
+    var sr=new THREE.Mesh(new THREE.BoxGeometry(seg,h,t),mat); sr.position.set( DW/2+seg/2,h/2,d/2); grp.add(sr);
+  }
+  // Lintel above door
+  var linH=h-DH;
+  if(linH>0.1){
+    var ln=new THREE.Mesh(new THREE.BoxGeometry(DW,linH,t),mat); ln.position.set(0,DH+linH/2,d/2); grp.add(ln);
+  }
+}
+
+// ─── BRUTALIST DETAIL HELPERS ────────────────────────────────────────────────
+// Low concrete wall around the roof edge — a defining brutalist silhouette.
+// Sits just outside the box footprint so it reads as a thick crown.
+function addRoofParapet(grp, w, h, d, mat) {
+  var pH = 0.55, pT = 0.18;
+  var n  = new THREE.Mesh(new THREE.BoxGeometry(w+pT*2, pH, pT), mat); n .position.set(0, h+pH/2, -d/2-pT/2); grp.add(n);
+  var s  = new THREE.Mesh(new THREE.BoxGeometry(w+pT*2, pH, pT), mat); s .position.set(0, h+pH/2,  d/2+pT/2); grp.add(s);
+  var e  = new THREE.Mesh(new THREE.BoxGeometry(pT, pH, d), mat);      e .position.set( w/2+pT/2, h+pH/2, 0); grp.add(e);
+  var w2 = new THREE.Mesh(new THREE.BoxGeometry(pT, pH, d), mat);      w2.position.set(-w/2-pT/2, h+pH/2, 0); grp.add(w2);
+}
+
+// Random roof equipment — HVAC unit, antenna mast w/ red beacon, water tank
+// on stilts, or a stair-tower extension. Adds vertical interest above the
+// flat roofline that's so characteristic of cheap mid-century brutalism.
+function addRoofEquip(grp, w, h, d) {
+  var roll = rnd();
+  if (roll < 0.30) {
+    // HVAC unit — stamped metal box with a vent grille on one face
+    var hw=rr(1.2,2.4), hh=rr(0.6,1.0), hd=rr(0.7,1.4);
+    var box=new THREE.Mesh(new THREE.BoxGeometry(hw,hh,hd), M.metalDark);
+    box.position.set(rr(-w/2+1.5,w/2-1.5), h+hh/2+0.05, rr(-d/2+1.5,d/2-1.5));
+    grp.add(box);
+    var grill=new THREE.Mesh(new THREE.BoxGeometry(hw*0.6,hh*0.6,0.04), M.metal);
+    grill.position.set(box.position.x, box.position.y, box.position.z+hd/2+0.005); grp.add(grill);
+  } else if (roll < 0.50) {
+    // Antenna mast with crossbars and a low-glow red aviation beacon
+    var ah=rr(2.5,6);
+    var ant=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,ah,4), M.metal);
+    ant.position.set(rr(-w/3,w/3), h+ah/2, rr(-d/3,d/3)); grp.add(ant);
+    for(var i=0;i<2;i++){
+      var cb=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.03,0.03), M.metal);
+      cb.position.set(ant.position.x, h+ah*(0.4+i*0.30), ant.position.z); grp.add(cb);
+    }
+    var beacon=new THREE.Mesh(new THREE.BoxGeometry(0.10,0.10,0.10), M.beacon);
+    beacon.position.set(ant.position.x, h+ah, ant.position.z); grp.add(beacon);
+  } else if (roll < 0.70) {
+    // Water tank on stilts (very common atop mid-century apartment blocks)
+    var tw=rr(0.55,0.9), tH=rr(1.0,1.6), sH=0.7;
+    var tank=new THREE.Mesh(new THREE.CylinderGeometry(tw,tw,tH,8), M.metal);
+    tank.position.set(rr(-w/3,w/3), h+sH+tH/2, rr(-d/3,d/3)); grp.add(tank);
+    for(var i=0;i<4;i++){
+      var px=tank.position.x+(i&1?tw*0.7:-tw*0.7), pz=tank.position.z+(i&2?tw*0.7:-tw*0.7);
+      var leg=new THREE.Mesh(new THREE.BoxGeometry(0.06,sH,0.06), M.metalDark);
+      leg.position.set(px, h+sH/2, pz); grp.add(leg);
+    }
+  } else if (roll < 0.85) {
+    // Cooling stack — short industrial chimney with a metal cap ring
+    var cH = rr(2.5, 5.0);
+    var stack = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.52, cH, 6), M.brut2);
+    stack.position.set(rr(-w/3,w/3), h + cH/2, rr(-d/3,d/3)); grp.add(stack);
+    var ring = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.18, 6), M.metalDark);
+    ring.position.set(stack.position.x, h + cH, stack.position.z); grp.add(ring);
+  }
+  // Independent stair-tower extension ~25% of the time, on top of equipment
+  if (rnd() < 0.25) {
+    var sw=rr(1.2,1.8), sh=rr(2.5,4.5), sd=rr(1.2,1.8);
+    var stair=new THREE.Mesh(new THREE.BoxGeometry(sw,sh,sd), M.brut2);
+    stair.position.set(rr(-w/2+sw,w/2-sw), h+sh/2, rr(-d/2+sd,d/2-sd)); grp.add(stair);
+    // Door slot — black emissive so it reads as an opening, not a panel
+    var slot=new THREE.Mesh(new THREE.BoxGeometry(sw*0.4,sh*0.5,0.04),
+      new THREE.MeshLambertMaterial({color:0x05050a, emissive:0x080812}));
+    slot.position.set(stair.position.x, stair.position.y-sh*0.12, stair.position.z+sd/2+0.025);
+    grp.add(slot);
+  }
+}
+
+// Vertical concrete fins (brise-soleil) along a facade — a hallmark detail
+// of late-modernist / brutalist towers (Le Corbusier's Unité etc.).
+// `side` is 'n' or 's' (we only do these on the long facades to keep it simple).
+function addBriseSoleil(grp, w, h, d, mat, side) {
+  var nFins = Math.max(4, Math.floor(w/0.7));
+  var finT = 0.08, finP = 0.4;       // thickness, protrusion
+  var startY = h*0.12, endY = h*0.92;
+  var finH = endY - startY;
+  for (var i=0; i<nFins; i++) {
+    var x = -w/2 + (i+0.5)*(w/nFins);
+    var fin = new THREE.Mesh(new THREE.BoxGeometry(finT, finH, finP), mat);
+    if (side === 'n') fin.position.set(x, startY+finH/2, -d/2 - finP/2 + 0.03);
+    else              fin.position.set(x, startY+finH/2,  d/2 + finP/2 - 0.03);
+    grp.add(fin);
+  }
+  // Horizontal cap top + bottom tying the fins together
+  var capT = 0.12;
+  for (var k=0; k<2; k++) {
+    var cap = new THREE.Mesh(new THREE.BoxGeometry(w, capT, finP), mat);
+    var cy = (k===0) ? startY-capT/2 : endY+capT/2;
+    if (side === 'n') cap.position.set(0, cy, -d/2 - finP/2 + 0.03);
+    else              cap.position.set(0, cy,  d/2 + finP/2 - 0.03);
+    grp.add(cap);
+  }
+}
+
+// Cantilevered concrete balcony slab(s) protruding from the south facade,
+// with an under-beam and a low parapet rail. Pure brutalist photo-op.
+function addCantileverBalcony(grp, w, h, d, mat) {
+  var levels = ri(1, 3);
+  var bw_ = w*0.78, bd_ = 0.65;
+  var used = {};
+  for (var i=0; i<levels; i++) {
+    // Snap to nearest 3m floor band so balconies align with floors visually
+    var y = Math.round(rr(h*0.30, h*0.85) / 3) * 3;
+    if (used[y]) continue; used[y] = 1;
+    var slab = new THREE.Mesh(new THREE.BoxGeometry(bw_, 0.18, bd_), mat);
+    slab.position.set(0, y, d/2 + bd_/2 - 0.05); grp.add(slab);
+    // Underside diagonal support (looks like a buttress)
+    var beam = new THREE.Mesh(new THREE.BoxGeometry(bw_*0.9, 0.32, 0.18), mat);
+    beam.position.set(0, y-0.25, d/2 + bd_/2); grp.add(beam);
+    // Low parapet rail at outer edge
+    var rail = new THREE.Mesh(new THREE.BoxGeometry(bw_, 0.45, 0.06), mat);
+    rail.position.set(0, y+0.31, d/2 + bd_ - 0.03); grp.add(rail);
+  }
+}
+
+// ─── EERIE-PROP HELPERS ──────────────────────────────────────────────────────
+// All emissive-only (no PointLight) unless noted, to keep mobile shader
+// uniform pressure low.
+
+// Phone booth — a narrow kiosk with a dim red interior glow. Anatomy / The
+// Backrooms reference: an isolated, slightly-too-bright fixture in the dark.
+function makePhoneBooth(scene, cx, cz) {
+  var grp = new THREE.Group();
+  var w=0.85, h=2.10, d=0.85;
+  var frame = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M.boothFrame);
+  frame.position.y = h/2; grp.add(frame);
+  // Front-facing glow panel set into the box, simulates interior light
+  var glow = new THREE.Mesh(new THREE.BoxGeometry(w*0.78, h*0.85, 0.05), M.boothGlow);
+  glow.position.set(0, h/2, d/2 - 0.04); grp.add(glow);
+  // Roof cap (slightly oversized so it reads as a hat)
+  var roof = new THREE.Mesh(new THREE.BoxGeometry(w*1.15, 0.10, d*1.15), M.metalDark);
+  roof.position.y = h + 0.05; grp.add(roof);
+  // Phone unit hung inside
+  var phone = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.32, 0.10), M.metalDark);
+  phone.position.set(0, h*0.66, d/2 - 0.12); grp.add(phone);
+  // Door bar suggesting an opening on one side
+  var door = new THREE.Mesh(new THREE.BoxGeometry(w*0.10, h*0.95, 0.025), M.metalDark);
+  door.position.set(-w*0.40, h*0.50, d/2 + 0.005); grp.add(door);
+  grp.position.set(cx, 0, cz); grp.rotation.y = rnd()*Math.PI*2;
+  scene.add(grp);
+  addSolid(cx, cz, w/2 + 0.05, d/2 + 0.05);
+}
+
+// Vending machine — teal/cyan glow, like the canonical liminal-photo vending
+// machine in an empty alley.
+function makeVendingMachine(scene, cx, cz, rotY) {
+  var grp = new THREE.Group();
+  var w=1.10, h=1.95, d=0.65;
+  var body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M.vendBody);
+  body.position.y = h/2; grp.add(body);
+  // Glass display window (emissive)
+  var glass = new THREE.Mesh(new THREE.BoxGeometry(w*0.92, h*0.55, 0.03), M.vendGlow1);
+  glass.position.set(0, h*0.62, d/2 + 0.018); grp.add(glass);
+  // Three product-row stripes inside the display
+  for (var i=0;i<3;i++) {
+    var st = new THREE.Mesh(new THREE.BoxGeometry(w*0.85, h*0.13, 0.025), M.vendGlow2);
+    st.position.set(0, h*0.42 + i*h*0.16, d/2 + 0.030); grp.add(st);
+  }
+  // Coin / dispense panel below
+  var pn = new THREE.Mesh(new THREE.BoxGeometry(w*0.95, h*0.25, 0.04), M.metalDark);
+  pn.position.set(0, h*0.16, d/2 + 0.020); grp.add(pn);
+  // A small dim selection-button strip
+  var btns = new THREE.Mesh(new THREE.BoxGeometry(w*0.65, 0.05, 0.02), M.boothGlow);
+  btns.position.set(0, h*0.31, d/2 + 0.040); grp.add(btns);
+  grp.position.set(cx, 0, cz);
+  if (rotY) grp.rotation.y = rotY;
+  scene.add(grp);
+  addSolid(cx, cz, w/2 + 0.05, d/2 + 0.05);
+}
+
+// Bus shelter — sheltered concrete + bench + fluorescent ceiling light.
+// Gets a real PointLight (one of the few new props that does).
+function makeBusStop(scene, cx, cz, rotY) {
+  var grp = new THREE.Group();
+  var w=3.0, h=2.4, d=1.4;
+  // Roof slab
+  var roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.18, d + 0.3), M.brut2);
+  roof.position.set(0, h, 0); grp.add(roof);
+  // Four corner columns
+  var ch = h - 0.1;
+  for (var i=-1;i<=1;i+=2) for (var j=-1;j<=1;j+=2) {
+    var col = new THREE.Mesh(new THREE.BoxGeometry(0.16, ch, 0.16), M.brut2);
+    col.position.set(i*w/2, ch/2, j*d/2); grp.add(col);
+  }
+  // Back wall — translucent panel with a faint glow
+  var back = new THREE.Mesh(new THREE.BoxGeometry(w - 0.32, h*0.7, 0.04), M.busPanel);
+  back.position.set(0, h*0.4, -d/2 + 0.03); grp.add(back);
+  // Bench
+  var bench = new THREE.Mesh(new THREE.BoxGeometry(w*0.85, 0.10, 0.45), M.conc2);
+  bench.position.set(0, 0.45, -d/2 + 0.30); grp.add(bench);
+  for (var bs=-1;bs<=1;bs+=2) {
+    var bsup = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.40, 0.40), M.conc2);
+    bsup.position.set(bs*w*0.35, 0.20, -d/2 + 0.30); grp.add(bsup);
+  }
+  // Ceiling fluorescent bar (always emissive so it reads at distance)
+  var bar = new THREE.Mesh(new THREE.BoxGeometry(w*0.7, 0.06, 0.20), M.busLight);
+  bar.position.set(0, h - 0.12, 0); grp.add(bar);
+  grp.position.set(cx, 0, cz);
+  if (rotY) grp.rotation.y = rotY;
+  scene.add(grp);
+  // PointLight for the warm shelter glow on the surrounding pavement
+  var pl = new THREE.PointLight(0x6688cc, 1.4 * (window.__LAMP_MUL||1), 7);
+  pl.position.set(cx, h - 0.4, cz); scene.add(pl);
+}
+
+// Wall-mounted CRT — boxy body with a VHS-blue static screen. The Anatomy /
+// PT reference: a screen running where one shouldn't be.
+function makeCRTTv(scene, cx, cy, cz, rotY) {
+  var grp = new THREE.Group();
+  var body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.45, 0.45), M.crtBezel);
+  body.position.set(0, 0, 0); grp.add(body);
+  var bezel = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.40, 0.02), M.crtBezel);
+  bezel.position.set(0, 0, 0.225); grp.add(bezel);
+  var screen = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.32, 0.01), M.crtScreen);
+  screen.position.set(0, 0, 0.236); grp.add(screen);
+  grp.position.set(cx, cy, cz);
+  if (rotY) grp.rotation.y = rotY;
+  scene.add(grp);
+}
+
+// Lone watcher — a static humanoid silhouette, NaissancE/Yume Nikki style.
+// Same general silhouette as the monster but never animates and never moves.
+// Pure dread ornament: posed somewhere in the distance just to be seen.
+function makeLoneWatcher(scene, cx, cy, cz, facing) {
+  var grp = new THREE.Group();
+  var skin = M.watcher;
+  var body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.40, 0.28), skin);
+  body.position.y = 1.00; grp.add(body);
+  var head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.32, 0.30), skin);
+  head.position.y = 1.85; grp.add(head);
+  var legL = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.00, 0.18), skin);
+  legL.position.set(-0.10, 0.50, 0); grp.add(legL);
+  var legR = legL.clone(); legR.position.x = 0.10; grp.add(legR);
+  var armL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.20, 0.12), skin);
+  armL.position.set(-0.27, 1.00, 0); grp.add(armL);
+  var armR = armL.clone(); armR.position.x = 0.27; grp.add(armR);
+  grp.position.set(cx, cy, cz);
+  grp.rotation.y = facing || 0;
+  scene.add(grp);
+}
+
+// Lattice power tower — the brutalist transmission grid in silhouette.
+// Used in the skyline ring, occasionally replacing a building.
+function makePowerTower(scene, cx, cz, h) {
+  var grp = new THREE.Group();
+  var spread = 2.6;
+  // Four near-vertical legs (slight inward bias suggests perspective taper)
+  for (var i=0;i<4;i++) {
+    var bx = (i&1) ? spread/2 : -spread/2;
+    var bz = (i&2) ? spread/2 : -spread/2;
+    var leg = new THREE.Mesh(new THREE.BoxGeometry(0.30, h, 0.30), M.metal);
+    leg.position.set(bx*0.6, h/2, bz*0.6); grp.add(leg);
+  }
+  // Crossbars at four levels (X-pattern with two perpendicular bars)
+  for (var b=1;b<=4;b++) {
+    var by = h * b / 5;
+    var cb1 = new THREE.Mesh(new THREE.BoxGeometry(spread, 0.10, 0.10), M.metal);
+    cb1.position.set(0, by, 0); grp.add(cb1);
+    var cb2 = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.10, spread), M.metal);
+    cb2.position.set(0, by, 0); grp.add(cb2);
+  }
+  // Cross-arm at top for power lines
+  var arm = new THREE.Mesh(new THREE.BoxGeometry(spread*1.5, 0.20, 0.20), M.metal);
+  arm.position.set(0, h + 0.3, 0); grp.add(arm);
+  // Aviation beacon
+  var beacon = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.20, 0.20), M.beacon);
+  beacon.position.set(0, h + 0.6, 0); grp.add(beacon);
+  grp.position.set(cx, 0, cz);
+  scene.add(grp);
+}
+
+// ─── STREET FURNITURE HELPERS ────────────────────────────────────────────────
+// Each helper is a self-contained "place at world (cx,cz)" function. They
+// addSolid so the player can't walk through them (improved-collisions pass).
+
+// Cylinder count helper — non-retro gets smoother circles. Cheap variation;
+// ~doubled vertex count on round things, still trivial overall.
+function cylSeg(s) { return opts.retro ? s : Math.max(s, s + 4); }
+
+// Fire hydrant — short fat cylinder, dome top, two side outlets. Iconic
+// urban marker, dark red so it doesn't pop out of the moody palette.
+var matFireHydrant = null;
+function getFireHydrantMat() {
+  if (!matFireHydrant) matFireHydrant = new THREE.MeshLambertMaterial({color:0x5a1a14, emissive:0x180806});
+  return matFireHydrant;
+}
+function makeFireHydrant(scene, cx, cz) {
+  var mat = getFireHydrantMat();
+  var grp = new THREE.Group();
+  var bH = 0.72;
+  var body = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, bH, cylSeg(8)), mat);
+  body.position.y = bH/2; grp.add(body);
+  var dome = new THREE.Mesh(new THREE.SphereGeometry(0.18, cylSeg(8), 4), mat);
+  dome.position.y = bH; grp.add(dome);
+  // Side outlet nuts
+  for (var i=0;i<2;i++) {
+    var nut = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.10, cylSeg(6)), mat);
+    nut.rotation.z = Math.PI/2;
+    nut.position.set((i*2-1)*0.20, bH*0.55, 0);
+    grp.add(nut);
+  }
+  // Cap on top
+  var cap = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.10, 0.06, cylSeg(8)), M.metalDark);
+  cap.position.y = bH + 0.14; grp.add(cap);
+  grp.position.set(cx, 0, cz);
+  scene.add(grp);
+  addSolid(cx, cz, 0.22, 0.22);
+}
+
+// Mailbox — tall blue column with a curved top and slot
+var matMailbox = null;
+function getMailboxMat() {
+  if (!matMailbox) matMailbox = new THREE.MeshLambertMaterial({color:0x162038});
+  return matMailbox;
+}
+function makeMailbox(scene, cx, cz) {
+  var mat = getMailboxMat();
+  var grp = new THREE.Group();
+  var bw=0.45, bh=1.20, bd=0.40;
+  var body = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), mat);
+  body.position.y = bh/2; grp.add(body);
+  // Curved (half-cylinder) top
+  var top = new THREE.Mesh(new THREE.CylinderGeometry(bd/2, bd/2, bw, cylSeg(8), 1, false, 0, Math.PI), mat);
+  top.rotation.z = Math.PI/2;
+  top.position.y = bh; grp.add(top);
+  // Letter slot
+  var slot = new THREE.Mesh(new THREE.BoxGeometry(bw*0.7, 0.04, 0.025),
+    new THREE.MeshLambertMaterial({color:0x05050a}));
+  slot.position.set(0, bh*0.85, bd/2 + 0.005); grp.add(slot);
+  // Foot
+  var foot = new THREE.Mesh(new THREE.BoxGeometry(bw+0.10, 0.05, bd+0.10), M.metalDark);
+  foot.position.y = 0.025; grp.add(foot);
+  grp.position.set(cx, 0, cz); grp.rotation.y = rr(0, Math.PI*2);
+  scene.add(grp);
+  addSolid(cx, cz, bw/2 + 0.06, bd/2 + 0.06);
+}
+
+// Traffic cone — orange cone with reflective bands. Skips collision (the
+// player should be able to plow through them; they're 60cm tall).
+var matCone = null, matConeBand = null;
+function makeTrafficCone(scene, cx, cz) {
+  if (!matCone)     matCone     = new THREE.MeshLambertMaterial({color:0x8a2c14, emissive:0x331008});
+  if (!matConeBand) matConeBand = new THREE.MeshLambertMaterial({color:0x666677});
+  var cone = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.60, cylSeg(8)), matCone);
+  cone.position.set(cx, 0.30, cz); scene.add(cone);
+  // Two reflective bands
+  for (var i=0;i<2;i++) {
+    var ring = new THREE.Mesh(new THREE.CylinderGeometry(0.13 - i*0.04, 0.15 - i*0.04, 0.05, cylSeg(8)), matConeBand);
+    ring.position.set(cx, 0.30 + i*0.13, cz); scene.add(ring);
+  }
+  // Square base
+  var base = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.04, 0.32), M.metalDark);
+  base.position.set(cx, 0.02, cz); scene.add(base);
+}
+
+// Dumpster — wide low metal box with a slightly-open lid and four wheels
+var matDumpster = null;
+function makeDumpster(scene, cx, cz, rotY) {
+  if (!matDumpster) matDumpster = new THREE.MeshLambertMaterial({color:0x162018});
+  var grp = new THREE.Group();
+  var w=1.85, h=1.05, d=1.00;
+  var body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matDumpster);
+  body.position.y = h/2; grp.add(body);
+  // Lid (angled open)
+  var lid = new THREE.Mesh(new THREE.BoxGeometry(w-0.10, 0.06, d-0.10), matDumpster);
+  lid.position.set(0, h+0.04, 0);
+  lid.rotation.x = -0.18;
+  grp.add(lid);
+  // Side ribs (a couple horizontal stripes for texture)
+  for (var r=0;r<2;r++) {
+    var rib = new THREE.Mesh(new THREE.BoxGeometry(w+0.02, 0.04, d+0.02), M.metalDark);
+    rib.position.set(0, h*(0.35 + r*0.30), 0); grp.add(rib);
+  }
+  // Wheels (four, rolled inward slightly)
+  for (var i=-1;i<=1;i+=2) for (var j=-1;j<=1;j+=2) {
+    var wh = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.08, cylSeg(8)),
+      new THREE.MeshLambertMaterial({color:0x07070d}));
+    wh.rotation.z = Math.PI/2;
+    wh.position.set(i*(w/2-0.18), 0.12, j*(d/2-0.18));
+    grp.add(wh);
+  }
+  grp.position.set(cx, 0, cz);
+  if (rotY) grp.rotation.y = rotY;
+  scene.add(grp);
+  // World-aligned bounding box for rotated dumpster
+  var c = Math.cos(rotY||0), s = Math.sin(rotY||0);
+  addSolid(cx, cz,
+    (w/2)*Math.abs(c) + (d/2)*Math.abs(s),
+    (w/2)*Math.abs(s) + (d/2)*Math.abs(c));
+}
+
+// Jersey barrier — long low concrete divider with the characteristic
+// sloped-base profile (approximated with two stacked boxes)
+function makeJerseyBarrier(scene, cx, cz, rotY, length) {
+  var grp = new THREE.Group();
+  var w = length || 2.0, d = 0.45;
+  var lower = new THREE.Mesh(new THREE.BoxGeometry(w, 0.35, d), M.conc1);
+  lower.position.y = 0.175; grp.add(lower);
+  var upper = new THREE.Mesh(new THREE.BoxGeometry(w, 0.45, d*0.55), M.conc1);
+  upper.position.y = 0.575; grp.add(upper);
+  grp.position.set(cx, 0, cz);
+  if (rotY) grp.rotation.y = rotY;
+  scene.add(grp);
+  var c = Math.cos(rotY||0), s = Math.sin(rotY||0);
+  addSolid(cx, cz,
+    (w/2)*Math.abs(c) + (d/2)*Math.abs(s),
+    (w/2)*Math.abs(s) + (d/2)*Math.abs(c));
+}
+
+// Stack of tires — torus rings, classic alleyway debris. Real solid so the
+// player doesn't walk through them.
+var matTire = null;
+function makeStackedTires(scene, cx, cz) {
+  if (!matTire) matTire = new THREE.MeshLambertMaterial({color:0x06060c});
+  var n = ri(2, 5);
+  for (var i=0;i<n;i++) {
+    var tire = new THREE.Mesh(new THREE.TorusGeometry(0.30, 0.10, 6, cylSeg(12)), matTire);
+    tire.rotation.x = Math.PI/2;
+    tire.position.set(cx + rr(-0.04,0.04), 0.10 + i*0.20, cz + rr(-0.04,0.04));
+    scene.add(tire);
+  }
+  addSolid(cx, cz, 0.40, 0.40);
+}
+
+// Manhole cover — flat circular disk with a cross pattern. No collision
+// (player can walk over). Pure detail for the road surface.
+var matManhole = null;
+function makeManholeCover(scene, cx, cz) {
+  if (!matManhole) matManhole = new THREE.MeshLambertMaterial({color:0x0c0c14, emissive:0x080810});
+  var cover = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.04, cylSeg(12)), matManhole);
+  cover.position.set(cx, 0.022, cz); scene.add(cover);
+  // Cross pattern (two thin bars)
+  for (var i=0;i<2;i++) {
+    var line = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.005, 0.04),
+      new THREE.MeshLambertMaterial({color:0x040408}));
+    line.rotation.y = i * Math.PI/2;
+    line.position.set(cx, 0.045, cz);
+    scene.add(line);
+  }
+}
+
+function makeBuilding(scene,wx,wz) {
+  var grp=new THREE.Group();
+  var type=ri(0,4);
+  // Pick from the broader concrete palette so adjacent buildings vary in tone.
+  var mat=[M.brut1,M.brut2,M.brut3,M.conc1,M.conc2,M.conc3,M.concRaw][ri(0,6)];
+  var trim=[M.brut2,M.conc2,M.conc3][ri(0,2)]; // banding/parapet contrast
+  var bw=6, bd=6, bh=0;
+
+  // Cell footprint budget: BLOCK - roadW = 18 - 7 = 11. Clamp building widths
+  // to ≤10 so no edge crosses the curb, even with up to ±0.5 cell jitter.
+  if(type===0) { // slab
+    bw=rr(5,10); bd=rr(5,10); bh=rr(10,36);
+    addExtBox(grp,bw,bh,bd,mat,2.3);
+    for(var i=0;i<Math.floor(bh/3);i++){var b=new THREE.Mesh(new THREE.BoxGeometry(bw+.3,.18,bd+.3),trim);b.position.y=i*3+1;grp.add(b);}
+    addWins(grp,bw,bh,bd,0,0,0,mat);
+  } else if(type===1) { // ziggurat
+    bw=rr(6,10); bd=rr(6,10); var cw=bw,cd=bd,cy=0,levels=ri(3,5);
+    for(var i=0;i<levels;i++){
+      var lh=rr(3,6);
+      if(i===0){ addExtBox(grp,cw,lh,cd,mat,2.3); }
+      else { var m=new THREE.Mesh(new THREE.BoxGeometry(cw,lh,cd),mat);m.position.set(0,cy+lh/2,0);grp.add(m); }
+      addWins(grp,cw,lh,cd,cy,0,0,mat);cy+=lh;cw=Math.max(2,cw-rr(.8,1.5));cd=Math.max(2,cd-rr(.8,1.5));
+    }
+    bh=cy;
+  } else if(type===2) { // tower cluster — keep towers inside a 10×10 footprint
+    bw=10;bd=10;var cnt=ri(2,3),pox=0,maxTh=0;
+    for(var i=0;i<cnt;i++){var tw=rr(2.5,4),th=rr(8,28),td=rr(2.5,4),ox=rr(-2.5,2.5),oz2=rr(-2.5,2.5);var m=new THREE.Mesh(new THREE.BoxGeometry(tw,th,td),mat);m.position.set(ox,th/2,oz2);grp.add(m);addWins(grp,tw,th,td,0,ox,oz2,mat);addSolid(wx+ox,wz+oz2,tw/2,td/2);if(th>maxTh)maxTh=th;if(i>0){var br=new THREE.Mesh(new THREE.BoxGeometry(Math.abs(ox-pox)+1,.7,1),trim);br.position.set((ox+pox)/2,rr(th*.3,th*.7),oz2);grp.add(br);}pox=ox;}
+    bh=maxTh;
+  } else if(type===3) { // recessed panel
+    bw=rr(6,10);bd=rr(6,10);bh=rr(12,28);
+    addExtBox(grp,bw,bh,bd,mat,2.3);
+    for(var i=0;i<ri(2,5);i++){var rp=new THREE.Mesh(new THREE.BoxGeometry(rr(1,3),rr(2,5),.4),trim);rp.position.set(rr(-bw/2+1,bw/2-1),rr(1,bh-1),bd/2+.01);grp.add(rp);}
+    addWins(grp,bw,bh,bd,0,0,0,mat);
+  } else { // low slab — was the worst offender (up to 20 wide)
+    bw=rr(7,10);bd=rr(7,10);bh=rr(3.5,8);
+    addExtBox(grp,bw,bh,bd,mat,2.3);
+    var rf=new THREE.Mesh(new THREE.BoxGeometry(bw+1,.5,bd+1),trim);rf.position.y=bh+.25;grp.add(rf);
+    addWins(grp,bw,bh,bd,0,0,0,mat);
+  }
+
+  // ─── Brutalist details ───────────────────────────────────────────────
+  // Skip the tower-cluster type (irregular roofline; details would float
+  // in mid-air between towers). Probabilities are halved on mobile so the
+  // average mesh count per building is ~2-3 detail meshes, not 6-8.
+  if (type !== 2 && bh > 4) {
+    var detM = IS_TOUCH ? 0.55 : 1.0;
+    if (rnd() < 0.85*detM) addRoofParapet(grp, bw, bh, bd, trim);
+    if (rnd() < 0.55*detM) addRoofEquip(grp, bw, bh, bd);
+    // Brise-soleil on tall slabs / recessed-panel buildings only — short
+    // buildings would have stubby fins that just look like mistakes.
+    if ((type === 0 || type === 3) && bh > 14 && rnd() < 0.45*detM) {
+      addBriseSoleil(grp, bw, bh, bd, trim, rnd() < 0.5 ? 'n' : 's');
+    }
+    // Cantilever balconies — only on south facade so they don't conflict
+    // with the doorway (south is where the door is).
+    if ((type === 0 || type === 3) && bh > 12 && rnd() < 0.30*detM) {
+      addCantileverBalcony(grp, bw, bh, bd, trim);
+    }
+  }
+
+  grp.position.set(wx,0,wz); scene.add(grp);
+  if(type!==2) {
+    var _DW=1.4, _hw=bw/2, _hd=bd/2;
+    addSolid(wx, wz-_hd+0.08, _hw, 0.08);
+    addSolid(wx+_hw-0.08, wz, 0.08, _hd);
+    addSolid(wx-_hw+0.08, wz, 0.08, _hd);
+    var _seg=_hw-_DW/2;
+    if(_seg>0.05){
+      // _seg is the full segment LENGTH; addSolid wants the HALF-width.
+      addSolid(wx-_DW/2-_seg/2, wz+_hd-0.08, _seg/2, 0.08);
+      addSolid(wx+_DW/2+_seg/2, wz+_hd-0.08, _seg/2, 0.08);
+    }
+  }
+  return {bw:bw,bd:bd};
+}
+
+function addWins(grp,w,h,d,baseY,ox,oz,mat) {
+  var floors=Math.floor(h/3),cols=Math.floor(w/2);
+  for(var fl=0;fl<floors;fl++) for(var col=0;col<cols;col++) {
+    if(rnd()>.3) continue;
+    var lit=rnd()>.65, side=rnd()>.5?1:-1;
+    var wn=new THREE.Mesh(new THREE.BoxGeometry(.6,.9,.1),lit?M.winLit:M.winDark);
+    wn.position.set(ox+(col-cols/2)*(w/cols)*.7, baseY+fl*3+1.5+rr(-.2,.2), oz+side*(d/2+.05));
+    grp.add(wn);
+  }
+}
+
+var FH=3.2;
+var doors=[]; // {pivot, open, targetAngle, hinge:{x,z}, normal:{z}}
+
+// ── Proper staircase: ramp + individual steps visible from side ──
+function buildStaircase(scene,sx,sz,fy,dir) {
+  // dir: 1=steps go +Z, -1=steps go -Z
+  var STEPS=12, totalD=FH*0.85, totalH=FH;
+  var sd=totalD/STEPS, sh=totalH/STEPS, sw=2.2;
+  // Solid ramp underneath (walkable)
+  var ramp=new THREE.Mesh(new THREE.BoxGeometry(sw,0.12,totalD),M.iStair);
+  ramp.rotation.x= dir * -Math.atan2(totalH,totalD);
+  ramp.position.set(sx, fy+totalH/2, sz+dir*totalD/2); scene.add(ramp);
+  var rail=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.05,totalD+0.1),M.metal);
+  rail.rotation.x=dir*Math.atan2(totalH,totalD);
+  rail.position.set(sx+sw/2+0.06, fy+totalH*0.5+0.7, sz+dir*totalD/2); scene.add(rail);
+}
+
+// ── Wall section with door opening cut by building 3 pieces ──
+function buildWallWithDoor(scene,cx,z,fy,wallW,doorW,doorH,thick) {
+  var wh=FH-0.1, seg=(wallW-doorW)/2;
+  if(seg<0.05) return;
+  var l=new THREE.Mesh(new THREE.BoxGeometry(seg,wh,thick),M.iWall);
+  l.position.set(cx-doorW/2-seg/2, fy+wh/2, z); scene.add(l);
+  var r=new THREE.Mesh(new THREE.BoxGeometry(seg,wh,thick),M.iWall);
+  r.position.set(cx+doorW/2+seg/2, fy+wh/2, z); scene.add(r);
+  var lintelH=wh-doorH;
+  if(lintelH>0.05){
+    var ln=new THREE.Mesh(new THREE.BoxGeometry(doorW,lintelH,thick),M.iWall);
+    ln.position.set(cx, fy+doorH+lintelH/2, z); scene.add(ln);
+  }
+  // Interior door — hinge left, swings along -X wall
+  var hingeX = cx - doorW/2;
+  var ipivot = new THREE.Group();
+  ipivot.position.set(hingeX, fy, z);
+  scene.add(ipivot);
+  var ipanel = new THREE.Mesh(
+    new THREE.BoxGeometry(doorW-0.04, doorH-0.04, 0.05),
+    new THREE.MeshLambertMaterial({color:0x0e0e16})
+  );
+  ipanel.position.set(doorW/2, doorH/2, 0);
+  ipivot.add(ipanel);
+  var ih = new THREE.Mesh(new THREE.BoxGeometry(0.04,0.26,0.04), M.metalDark);
+  ih.position.set(doorW-0.16, doorH*0.44, 0.05);
+  ipivot.add(ih);
+  doors.push({
+    pivot: ipivot, open:false, targetAngle:0, currentAngle:0,
+    hx: hingeX, hz: z, openAngle: Math.PI*0.8
+  });
+
+}
+
+// ── Street-level props: lamps, pipes, signs, debris ──
+function scatterStreetProps(scene,cx,cz) {
+  var r=rnd();
+  if(r<0.18) {
+    var post=new THREE.Mesh(new THREE.BoxGeometry(0.12,4,0.12),M.metal);
+    post.position.set(cx,2,cz); scene.add(post);
+    var arm=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.06,0.06),M.metal);
+    arm.position.set(cx+0.5,4,cz); scene.add(arm);
+    var bulb=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.22,0.28),rnd()>0.4?M.lamp:M.lampOff);
+    bulb.position.set(cx+1.0,3.88,cz); scene.add(bulb);
+  }
+  //// Pipe along wall
+  if(r>0.3&&r<0.55) {
+    var plen=rr(2,6);
+    var pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,plen,5),M.pipe);
+    pipe.rotation.z=Math.PI/2;
+    pipe.position.set(cx+rr(-2,2),rr(0.5,2.5),cz+rr(-1,1)); scene.add(pipe);
+  }
+  // Metal box / debris
+  if(r>0.6&&r<0.8) {
+    var box=new THREE.Mesh(new THREE.BoxGeometry(rr(0.4,0.9),rr(0.3,0.7),rr(0.4,0.9)),rnd()>0.5?M.metal:M.rust);
+    box.position.set(cx+rr(-2,2),box.geometry.parameters.height/2,cz+rr(-2,2));
+    box.rotation.y=rr(0,Math.PI); scene.add(box);
+  }
+  // Wall poster / sign on building face
+  if(r>0.8) {
+    var pw=rr(0.6,1.4), ph=rr(0.8,1.6);
+    var poster=new THREE.Mesh(new THREE.BoxGeometry(pw,ph,0.04), rnd()>0.5?M.poster:M.posterFade);
+    poster.position.set(cx+rr(-2,2), rr(1.2,3.5), cz+rr(-1,1)); scene.add(poster);
+  }
+
+  // ── Brutalist street props (independent rolls so they can stack) ──
+  // Decorative concrete only — no addSolid so they don't accidentally block
+  // a doorway. The chunky volumes still read as obstacles visually.
+
+  // Concrete planter with a dead tree skeleton inside
+  if (rnd() < 0.14) {
+    var plw=rr(0.7,1.2), plh=0.5;
+    var pcx=cx+rr(-1.6,1.6), pcz=cz+rr(-1.6,1.6);
+    var planter=new THREE.Mesh(new THREE.BoxGeometry(plw,plh,plw),M.planter);
+    planter.position.set(pcx, plh/2, pcz); scene.add(planter);
+    var inner=new THREE.Mesh(new THREE.BoxGeometry(plw*0.7,0.04,plw*0.7),M.deadLeaf);
+    inner.position.set(pcx, plh-0.02, pcz); scene.add(inner);
+    var trunkH=rr(1.5,2.8);
+    var trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.07,trunkH,5),M.branch);
+    trunk.position.set(pcx, plh+trunkH/2, pcz); scene.add(trunk);
+    for (var bi=0;bi<3;bi++){
+      var brl=rr(0.45,0.95);
+      var br=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.04,brl,4),M.branch);
+      br.rotation.z=rr(-1.0,1.0); br.rotation.y=rr(0,Math.PI*2);
+      br.position.set(pcx+Math.sin(bi*2)*0.05, plh+trunkH*rr(0.45,0.92), pcz+Math.cos(bi*2)*0.05);
+      scene.add(br);
+    }
+  }
+
+  // Concrete bollard line — squat pillars along a curb edge
+  if (rnd() < 0.10) {
+    var n=ri(2,5), spacing=1.0;
+    var startX=cx+rr(-1.5,1.5), startZ=cz+rr(-1.5,1.5);
+    var horiz=rnd()<0.5;
+    for (var i=0;i<n;i++){
+      var bx=startX + (horiz?i*spacing:0);
+      var bz=startZ + (horiz?0:i*spacing);
+      var bol=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.16,0.7,6),M.conc1);
+      bol.position.set(bx,0.35,bz); scene.add(bol);
+      addSolid(bx,bz,0.16,0.16);
+    }
+  }
+
+  // Long concrete bench — slab on two end-supports
+  if (rnd() < 0.08) {
+    var bnL=rr(1.8,2.8), bnX=cx+rr(-1.5,1.5), bnZ=cz+rr(-1.5,1.5);
+    var bnRot=rnd()<0.5?0:Math.PI/2;
+    var seat=new THREE.Mesh(new THREE.BoxGeometry(bnL,0.10,0.45),M.conc2);
+    seat.position.set(bnX,0.45,bnZ); seat.rotation.y=bnRot; scene.add(seat);
+    for (var ei=0;ei<2;ei++){
+      var off=(ei*2-1)*(bnL*0.42);
+      var sx2=bnX+Math.cos(bnRot)*off, sz2=bnZ+Math.sin(bnRot)*off;
+      var sup=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.40,0.40),M.conc2);
+      sup.position.set(sx2,0.20,sz2); sup.rotation.y=bnRot; scene.add(sup);
+    }
+  }
+
+  // Decorative concrete pylon / monolith — pure brutalist sculpture
+  if (rnd() < 0.06) {
+    var pyW=rr(0.35,0.8), pyH=rr(2.5,5.0), pyD=rr(0.35,0.8);
+    var py=new THREE.Mesh(new THREE.BoxGeometry(pyW,pyH,pyD),M.concRaw);
+    var pyX=cx+rr(-1.8,1.8), pyZ=cz+rr(-1.8,1.8);
+    py.position.set(pyX, pyH/2, pyZ); py.rotation.y=rr(0,Math.PI);
+    scene.add(py);
+    addSolid(pyX, pyZ, pyW/2, pyD/2);
+  }
+
+  // ── Liminal urban props (independent low-probability rolls) ──
+  // Phone booth — solitary kiosk with a red interior glow
+  if (rnd() < 0.05) {
+    makePhoneBooth(scene, cx + rr(-1.8,1.8), cz + rr(-1.8,1.8));
+  }
+  // Vending machine — teal-glowing display on the sidewalk
+  if (rnd() < 0.05) {
+    makeVendingMachine(scene, cx + rr(-1.8,1.8), cz + rr(-1.8,1.8), rr(0, Math.PI*2));
+  }
+  // CRT TV mounted on a pylon at head-height — Anatomy / PT vibe
+  if (rnd() < 0.04) {
+    var ttx = cx + rr(-1.8,1.8), ttz = cz + rr(-1.8,1.8);
+    // Short concrete post under it
+    var post = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.6, 0.18), M.conc2);
+    post.position.set(ttx, 0.8, ttz); scene.add(post);
+    addSolid(ttx, ttz, 0.10, 0.10);
+    makeCRTTv(scene, ttx, 1.85, ttz, rr(0, Math.PI*2));
+  }
+
+  // ── Street furniture (rounder, more colourful, full collision) ──
+  if (rnd() < 0.06) makeFireHydrant(scene, cx + rr(-1.5,1.5), cz + rr(-1.5,1.5));
+  if (rnd() < 0.04) makeMailbox    (scene, cx + rr(-1.5,1.5), cz + rr(-1.5,1.5));
+  if (rnd() < 0.07) {
+    // Cone cluster — 1-4 cones close together
+    var ccx = cx + rr(-1.5,1.5), ccz = cz + rr(-1.5,1.5);
+    var nc = ri(1, 4);
+    for (var ic=0; ic<nc; ic++) makeTrafficCone(scene, ccx + rr(-0.5,0.5), ccz + rr(-0.5,0.5));
+  }
+  if (rnd() < 0.05) makeDumpster(scene, cx + rr(-1.6,1.6), cz + rr(-1.6,1.6), rr(0, Math.PI*2));
+  if (rnd() < 0.04) makeStackedTires(scene, cx + rr(-1.6,1.6), cz + rr(-1.6,1.6));
+  if (rnd() < 0.04) {
+    // Jersey barrier line — 1-3 segments end-to-end
+    var jbX = cx + rr(-1.5,1.5), jbZ = cz + rr(-1.5,1.5);
+    var jbR = rnd() < 0.5 ? 0 : Math.PI/2;
+    var jbN = ri(1, 3);
+    for (var jb=0; jb<jbN; jb++) {
+      var jbOff = jb * 2.05;
+      makeJerseyBarrier(scene,
+        jbX + Math.cos(jbR)*jbOff,
+        jbZ - Math.sin(jbR)*jbOff,  // -sin because of three.js rotation handedness
+        jbR, 2.0);
+    }
+  }
+  if (rnd() < 0.05) makeManholeCover(scene, cx + rr(-2,2), cz + rr(-2,2));
+}
+
+// ── Interior props ── all wall-mounted things are actually on a wall.
+// Returns a {x,z,rotY} for an arbitrary wall position with given inset.
+function pickWallSpot(cx,cz,hw,hd,inset){
+  var w=ri(0,3); // 0=N(-z), 1=E(+x), 2=W(-x), 3=S(+z)
+  if(w===0) return {x:cx+rr(-hw+0.5,hw-0.5), z:cz-hd+inset, rotY:0};
+  if(w===1) return {x:cx+hw-inset,           z:cz+rr(-hd+0.5,hd-0.5), rotY:-Math.PI/2};
+  if(w===2) return {x:cx-hw+inset,           z:cz+rr(-hd+0.5,hd-0.5), rotY: Math.PI/2};
+  // South wall has the entry doorway — pick a side of the door, leaving 1m clearance
+  var sx = (rnd()<0.5) ? cx+rr(-hw+0.5,-1.0) : cx+rr(1.0,hw-0.5);
+  return {x:sx, z:cz+hd-inset, rotY:Math.PI};
+}
+
+// Pick a free spot in the room, avoiding the doorway approach (south face, ~1.2 wide).
+function pickInteriorSpot(cx,cz,hw,hd,margin){
+  for(var t=0;t<8;t++){
+    var px=cx+rr(-hw+margin,hw-margin), pz=cz+rr(-hd+margin,hd-margin);
+    if(pz>cz+hd-1.6 && Math.abs(px-cx)<1.0) continue;
+    return {x:px,z:pz};
+  }
+  return {x:cx,z:cz-hd*0.4};
+}
+
+function scatterInteriorProps(scene,cx,cz,iw,id,fy,refs) {
+  var hw=iw/2, hd=id/2;
+  var count=ri(1,2);
+  for(var i=0;i<count;i++){
+    var t=rnd();
+    if(t<0.2) {
+      // Chair — wrapped in a Group so memory-drift can translate it as a unit.
+      var sp=pickInteriorSpot(cx,cz,hw,hd,0.6);
+      var px=sp.x, pz=sp.z;
+      var chairG = new THREE.Group();
+      chairG.position.set(px, 0, pz);
+      var seat=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.06,0.5),M.chair);
+      seat.position.set(0,fy+0.45,0); chairG.add(seat);
+      var back=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.55,0.05),M.chair);
+      back.position.set(0,fy+0.75,-0.22); chairG.add(back);
+      var leg=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.45,0.04),M.metalDark);
+      leg.position.set(0,fy+0.22,0); chairG.add(leg);
+      scene.add(chairG);
+      if (refs) (refs.movable = refs.movable || []).push(chairG);
+    } else if(t<0.38) {
+      // Desk
+      var sp=pickInteriorSpot(cx,cz,hw,hd,0.7);
+      var px=sp.x, pz=sp.z;
+      var top=new THREE.Mesh(new THREE.BoxGeometry(rr(0.8,1.4),0.06,rr(0.5,0.8)),M.desk);
+      top.position.set(px,fy+0.75,pz); scene.add(top);
+      var leg1=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.75,0.05),M.metalDark);
+      leg1.position.set(px,fy+0.37,pz); scene.add(leg1);
+      if(rnd()>0.5){var paper=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.01,0.22),M.posterFade);paper.position.set(px+rr(-0.3,0.3),fy+0.79,pz+rr(-0.15,0.15));scene.add(paper);}
+    } else if(t<0.52) {
+      // Filing cabinet — flush against a wall
+      var s=pickWallSpot(cx,cz,hw,hd,0.3);
+      var cab=new THREE.Mesh(new THREE.BoxGeometry(0.45,1.1,0.55),M.metal);
+      cab.position.set(s.x,fy+0.55,s.z); cab.rotation.y=s.rotY; scene.add(cab);
+    } else if(t<0.64) {
+      // Sign / plaque — actually mounted on a wall, facing inward
+      var s=pickWallSpot(cx,cz,hw,hd,0.04);
+      var sw2=rr(0.5,1.0), sh2=rr(0.2,0.4);
+      var sign=new THREE.Mesh(new THREE.BoxGeometry(sw2,sh2,0.04),M.sign);
+      sign.position.set(s.x,fy+rr(1.4,2.2),s.z); sign.rotation.y=s.rotY; scene.add(sign);
+      if (refs && !refs.sign) refs.sign = sign;
+    } else if(t<0.76) {
+      // Stacked boxes
+      var sp=pickInteriorSpot(cx,cz,hw,hd,0.5);
+      var px=sp.x, pz=sp.z;
+      var stack=ri(1,3);
+      for(var st=0;st<stack;st++){
+        var bxx=new THREE.Mesh(new THREE.BoxGeometry(rr(0.4,0.6),rr(0.35,0.5),rr(0.4,0.6)),rnd()>0.4?M.wood:M.woodDark);
+        bxx.position.set(px+rr(-0.1,0.1),fy+st*0.45+0.22,pz+rr(-0.1,0.1));
+        bxx.rotation.y=rr(0,0.4); scene.add(bxx);
+      }
+    } else if(t<0.88) {
+      // Hanging cable — from ceiling near a corner
+      var corner=ri(0,3);
+      var px=cx+((corner&1)?(hw-0.5):(-hw+0.5));
+      var pz=cz+((corner&2)?(hd-0.5):(-hd+0.5));
+      var clen=rr(0.5,FH*0.6);
+      var cable=new THREE.Mesh(new THREE.BoxGeometry(0.03,clen,0.03),M.cable);
+      cable.position.set(px,fy+FH-0.05-clen/2,pz); scene.add(cable);
+    } else {
+      // Poster on a wall
+      var s=pickWallSpot(cx,cz,hw,hd,0.04);
+      var pw2=rr(0.5,1.0), ph2=rr(0.7,1.2);
+      var poster=new THREE.Mesh(new THREE.BoxGeometry(pw2,ph2,0.03),rnd()>0.5?M.poster:M.posterFade);
+      poster.position.set(s.x,fy+rr(1.0,2.0),s.z); poster.rotation.y=s.rotY; scene.add(poster);
+      if (refs && !refs.poster) refs.poster = poster;
+    }
+  }
+
+  // Pipe along ceiling near the back (north) wall
+  if(rnd()<0.4){
+    var plen2=rr(iw*0.3,iw*0.7);
+    var pipe2=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,plen2,5),M.pipe);
+    pipe2.rotation.z=Math.PI/2;
+    pipe2.position.set(cx,fy+rr(0.4,FH-0.6),cz-hd+0.15); scene.add(pipe2);
+  }
+}
+
+function buildInterior(scene,cx,cz,bw,bd,spaceId) {
+  // Single-story for now. Multi-floor needs a stair-hole in the upper slab and
+  // a Y-aware zone lookup; not yet implemented.
+  var floors=1;
+  // Inner room: flush with the inside face of the 0.3-thick exterior shell.
+  var iw=bw-0.3, id=bd-0.3;
+  var DW=1.4, DH=2.3;
+  var wt=0.05; // thin inner-wall liner
+  var wh2=FH-0.01;
+  // v11: refs holds handles the memory-drift system can mutate on revisit.
+  // Populated as we build (fluorescent, door) and by scatterInteriorProps.
+  var refs = { id: spaceId || ('s'+cx.toFixed(0)+'_'+cz.toFixed(0)) };
+
+  for(var f=0;f<floors;f++) {
+    var fy=f*FH, surf=f===0?'tile':'concrete';
+
+    // Floor slab
+    var flr=new THREE.Mesh(new THREE.BoxGeometry(iw-0.05,0.1,id-0.05),f===0?M.iTile:M.iFloor);
+    flr.position.set(cx,fy+0.05,cz); scene.add(flr);
+
+    // Ceiling
+    var ceil=new THREE.Mesh(new THREE.BoxGeometry(iw,0.1,id),M.iCeil);
+    ceil.position.set(cx,fy+FH-0.05,cz); scene.add(ceil);
+
+    // Inner liner walls — flush with exterior, thin so they don't intrude on the room.
+    var wN=new THREE.Mesh(new THREE.BoxGeometry(iw, wh2, wt), M.iWall);
+    wN.position.set(cx, fy+wh2/2, cz-id/2+wt/2); scene.add(wN);
+    var wE=new THREE.Mesh(new THREE.BoxGeometry(wt, wh2, id), M.iWall);
+    wE.position.set(cx+iw/2-wt/2, fy+wh2/2, cz); scene.add(wE);
+    var wW=new THREE.Mesh(new THREE.BoxGeometry(wt, wh2, id), M.iWall);
+    wW.position.set(cx-iw/2+wt/2, fy+wh2/2, cz); scene.add(wW);
+
+    // South wall — split around the entry door
+    var seg=(iw-DW)/2;
+    if(seg>0.05){
+      var sL=new THREE.Mesh(new THREE.BoxGeometry(seg, wh2, wt), M.iWall);
+      sL.position.set(cx-DW/2-seg/2, fy+wh2/2, cz+id/2-wt/2); scene.add(sL);
+      var sR=new THREE.Mesh(new THREE.BoxGeometry(seg, wh2, wt), M.iWall);
+      sR.position.set(cx+DW/2+seg/2, fy+wh2/2, cz+id/2-wt/2); scene.add(sR);
+      var linH=wh2-DH;
+      if(linH>0.05){
+        var ln=new THREE.Mesh(new THREE.BoxGeometry(DW, linH, wt), M.iWall);
+        ln.position.set(cx, fy+DH+linH/2, cz+id/2-wt/2); scene.add(ln);
+      }
+    }
+
+    // Single fluorescent light bar in the middle of the ceiling
+    var dimBulb = rnd() > 0.78; // renamed from `dead` to avoid shadowing the player-death flag
+    var barMat = dimBulb ? M.iLightOff : M.iLight.clone();
+    var bar=new THREE.Mesh(new THREE.BoxGeometry(Math.min(iw*0.45,3.0),0.06,0.26), barMat);
+    bar.position.set(cx,fy+FH-0.1,cz); scene.add(bar);
+    if(!dimBulb){
+      // Mobile reduces fluorescent intensity (LAMP_MUL) since interiors are
+      // already lifted by the ambient + emissive base.
+      var _lm = window.__LAMP_MUL || 1;
+      var pl=new THREE.PointLight(0x6677cc, 4.0 * _lm, FH*2.4);
+      pl.position.set(cx,fy+FH-0.2,cz); scene.add(pl);
+      registerFlicker(pl, barMat, 'fluor');
+      // Drift hook on the ground floor only — the variant pool can dim, warm,
+      // or kill this fluorescent. The flicker entry just registered is the
+      // last one in flickers[]; capture it so 'light_off' can mark it dead.
+      if (f === 0) {
+        refs.fluor = { light: pl, bulbMat: barMat, flickerEntry: flickers[flickers.length-1] };
+      }
+    }
+
+    // Walkable zone — slightly inset so player can't stand inside the wall liner
+    addZone(cx,cz, iw/2-0.25, id/2-0.25, fy, fy+FH, surf);
+
+    // Pass refs only on the ground floor — drift only operates there for now.
+    scatterInteriorProps(scene,cx,cz,iw,id,fy, f===0 ? refs : null);
+  }
+
+  // ── Door: pivot group hinged at left edge ──
+  var doorZ = cz+id/2-wt/2;          // sits in the inner-wall plane
+  var hingeX = cx - DW/2;
+
+  var pivot = new THREE.Group();
+  pivot.position.set(hingeX, 0, doorZ);
+  scene.add(pivot);
+
+  // Door panel (origin at hinge edge — extends +X)
+  var doorPanel = new THREE.Mesh(
+    new THREE.BoxGeometry(DW-0.04, DH-0.04, 0.06),
+    new THREE.MeshLambertMaterial({color:0x0e0e16})
+  );
+  doorPanel.position.set(DW/2, DH/2, 0);
+  pivot.add(doorPanel);
+
+  // Handle bar on panel (offset from center toward free edge)
+  var dh = new THREE.Mesh(new THREE.BoxGeometry(0.05,0.3,0.05), M.metalDark);
+  dh.position.set(DW-0.18, DH*0.44, 0.06);
+  pivot.add(dh);
+  // Handle backing plate
+  var dhp = new THREE.Mesh(new THREE.BoxGeometry(0.04,0.04,0.12), M.metalDark);
+  dhp.position.set(DW-0.18, DH*0.44, 0.03);
+  pivot.add(dhp);
+
+  // Register door
+  var doorRec = {
+    pivot: pivot,
+    open: false,
+    targetAngle: 0,
+    currentAngle: 0,
+    // world position of hinge for proximity check
+    hx: hingeX,
+    hz: doorZ,
+    // open swings inward (negative Z in world = into building = positive rotation)
+    openAngle: -Math.PI * 0.82
+  };
+  doors.push(doorRec);
+  refs.door = doorRec;
+
+  // Register the space for memory-drift. spaceId is supplied by the caller
+  // (buildWorld passes a stable bx/bz-derived id). If a previous visit recorded
+  // a drift variant for this space, applyExistingDrift restores it now so the
+  // change is visible on first sight, not only after entering.
+  registerSpace(refs.id, cx, cz, bw, bd, 0, refs);
+  applyExistingDrift(spaces[spaces.length-1]);
+}
+
+// ─── GAME LOOP ────────────────────────────────────────────────────────────────
+function startGame() {
+  var canvas = document.getElementById('gc');
+  var wrap   = document.getElementById('wrap');
+
+  // Internal framebuffer height. Width is computed from aspect each resize.
+  // Retro mode = the original PS1-feel 240px tall, nearest-neighbour upscale.
+  // Default mode = ~360px tall with bilinear browser upscale, antialiased on
+  // desktop. Mobile non-retro stays at 320 to keep fragment cost reasonable.
+  var RH = opts.retro ? 240 : (IS_TOUCH ? 320 : 360);
+  var RW = 320;
+  // Antialias only on non-retro desktop. WebGL MSAA is hardware-cheap on
+  // desktop; on mobile and retro mode we leave it off (mobile fillrate cost,
+  // retro intentional aliasing).
+  var useAA = !opts.retro && !IS_TOUCH;
+
+  var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:useAA});
+  renderer.setPixelRatio(1);
+  renderer.shadowMap.enabled = false;
+  renderer.setClearColor(0x07070d);
+  // Mobile: ACES tone mapping has a brighter midtone curve than Reinhard
+  // (Reinhard squashes everything toward 0.5; ACES preserves saturation and
+  // keeps midtones lifted) and rolls highlights off smoothly. Exposure 1.5
+  // pushes the whole scene up by 50% before the tone curve, so dark walls
+  // become readable on a phone screen in daylight without lamp halos
+  // hard-clipping.
+  if (IS_TOUCH) {
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.5;
+  }
+
+  var scene = new THREE.Scene();
+  // Fog: still close enough to feel claustrophobic, but pulled out from the
+  // original 42 so the new distant skyline (60–160m) actually has something
+  // to fade into. Mobile gets the same lift as before plus a touch more.
+  var fogFar = IS_TOUCH ? 95 : 60;
+  var fogCol = IS_TOUCH ? 0x14141e : 0x09090f;
+  scene.fog = new THREE.Fog(fogCol, IS_TOUCH ? 6 : 4, fogFar);
+  scene.background = new THREE.Color(fogCol);
+  // v11 procgen: nudge fog colour by the per-session tint. Always small
+  // (±0.024 channel-wise) — the player should never notice "the fog is teal
+  // today" but consecutive sessions should feel a touch different.
+  if (window.__FOG_TINT) {
+    var ft = window.__FOG_TINT;
+    scene.fog.color.r = Math.max(0, Math.min(1, scene.fog.color.r + ft.r));
+    scene.fog.color.g = Math.max(0, Math.min(1, scene.fog.color.g + ft.g));
+    scene.fog.color.b = Math.max(0, Math.min(1, scene.fog.color.b + ft.b));
+    scene.background.copy(scene.fog.color);
+  }
+
+  // Camera far plane raised to clip the skyline ring — was 120, but ring
+  // sits as far as 160m on mobile.
+  var camera = new THREE.PerspectiveCamera(opts.fov||68, 4/3, 0.1, 220);
+  camera.position.set(0,1.7,0);
+  camera.rotation.order = 'YXZ';
+
+  // v11: attach a THREE.AudioListener to the camera. THREE creates its own
+  // AudioContext if none exists, but we want it to share AC (created lazily
+  // by initAudio). The listener is wired up the first time initAudio() runs;
+  // see _maybeAttachListener below.
+  function _maybeAttachListener() {
+    if (_audioListener || !AC) return;
+    // Force THREE.AudioContext to use our existing AC. Without this, THREE's
+    // internal helper would lazily create a *second* AudioContext — iOS
+    // Safari then silently mutes one of them. Setting the cached context
+    // before constructing AudioListener routes everything to our AC.
+    if (THREE.AudioContext) {
+      THREE.AudioContext.setContext ? THREE.AudioContext.setContext(AC)
+                                    : (THREE.AudioContext._context = AC);
+    }
+    _audioListener = new THREE.AudioListener();
+    // Route the listener's output through our masterGain so the existing
+    // volume slider AND the ambient toggle (which sets out/inBus → 0 but
+    // doesn't touch master) at least get scaled by master. Disconnect from
+    // AC.destination first; THREE's default listener.gain → destination wire
+    // would otherwise sum twice.
+    try { _audioListener.gain.disconnect(); } catch(e){}
+    if (masterGain) _audioListener.gain.connect(masterGain);
+    else            _audioListener.gain.connect(AC.destination);
+    camera.add(_audioListener);
+    ensureSpatialSources(scene);
+  }
+
+  function resizeRenderer() {
+    var aspect = Math.max(0.5, Math.min(3, window.innerWidth / Math.max(1, window.innerHeight)));
+    RW = Math.max(160, Math.round(RH * aspect / 2) * 2); // even width
+    renderer.setSize(RW, RH, false);
+    camera.aspect = aspect;
+    camera.updateProjectionMatrix();
+    var ovEl = document.getElementById('ov');
+    if (ovEl) { ovEl.width = RW; ovEl.height = RH; }
+  }
+  resizeRenderer();
+  window.addEventListener('resize', resizeRenderer);
+  window.addEventListener('orientationchange', function(){ setTimeout(resizeRenderer, 120); });
+
+  // Lighting — dim and cold. Lamps and fluorescents are the only real light.
+  // The Hemisphere + Directional pair stays at desktop intensity so the
+  // sunlit-vs-shadow side of every building keeps its mood ratio. Mobile
+  // adds a flat AmbientLight on top — uniform fill from every angle, so the
+  // dark side of buildings lifts WITHOUT brightening the lit side, which
+  // was the source of the "huge bright patches" we saw before.
+  scene.add(new THREE.HemisphereLight(0x1a2240, 0x080810, 0.55));
+  var sun = new THREE.DirectionalLight(0x1a2240, 0.35);
+  sun.position.set(1,3,1); scene.add(sun);
+  if (IS_TOUCH) {
+    // Strong ambient fill — combined with ACES tone mapping (exposure 1.5)
+    // and a small emissive floor on the building materials below, this is
+    // what makes dark walls actually readable on a phone screen.
+    scene.add(new THREE.AmbientLight(0xc0c5d8, 1.5));
+  }
+
+  // Materials
+  M = {
+    ground:    new THREE.MeshLambertMaterial({color:0x181820}),
+    brut1:     new THREE.MeshLambertMaterial({color:0x2a2a3a}),
+    brut2:     new THREE.MeshLambertMaterial({color:0x222230}),
+    brut3:     new THREE.MeshLambertMaterial({color:0x2e2e40}),
+    // Additional concrete tones so neighbouring buildings don't all read
+    // identical — picked from a brutalist palette: weathered grey, raw
+    // concrete, dirty concrete, bunker-dark.
+    conc1:     new THREE.MeshLambertMaterial({color:0x32323e}),
+    conc2:     new THREE.MeshLambertMaterial({color:0x252531}),
+    conc3:     new THREE.MeshLambertMaterial({color:0x1f1f2a}),
+    concRaw:   new THREE.MeshLambertMaterial({color:0x2a2c34}),
+    plaza:     new THREE.MeshLambertMaterial({color:0x1d1d24}),
+    plazaSeam: new THREE.MeshLambertMaterial({color:0x141420}),
+    planter:   new THREE.MeshLambertMaterial({color:0x222230}),
+    deadLeaf:  new THREE.MeshLambertMaterial({color:0x12130c}),
+    branch:    new THREE.MeshLambertMaterial({color:0x0f0e08}),
+    beacon:    new THREE.MeshLambertMaterial({color:0x551111, emissive:0x331111}),
+    winLit:    new THREE.MeshLambertMaterial({color:0x3a3a52,emissive:0x141428}),
+    winDark:   new THREE.MeshLambertMaterial({color:0x090912}),
+    walkway:   new THREE.MeshLambertMaterial({color:0x141420}),
+    iShell:    new THREE.MeshLambertMaterial({color:0x18181f,side:THREE.BackSide}),
+    iFloor:    new THREE.MeshLambertMaterial({color:0x1a1a24}),
+    iTile:     new THREE.MeshLambertMaterial({color:0x1e1e2a}),
+    iCeil:     new THREE.MeshLambertMaterial({color:0x141420}),
+    iWall:     new THREE.MeshLambertMaterial({color:0x22222e}),
+    iStair:    new THREE.MeshLambertMaterial({color:0x141422}),
+    iLight:    new THREE.MeshLambertMaterial({color:0x8888bb,emissive:0x4444aa}),
+    iLightOff: new THREE.MeshLambertMaterial({color:0x1a1a22}),
+    iDoor:     new THREE.MeshLambertMaterial({color:0x0c0c18}),
+    // Metals get Phong shading in non-retro mode for proper specular glints
+    // off lamps and beacons. Retro mode keeps Lambert (the flat PS1 look).
+    metal:     opts.retro
+      ? new THREE.MeshLambertMaterial({color:0x1c1c28})
+      : new THREE.MeshPhongMaterial  ({color:0x1c1c28, shininess:55, specular:0x444466}),
+    metalDark: opts.retro
+      ? new THREE.MeshLambertMaterial({color:0x141420})
+      : new THREE.MeshPhongMaterial  ({color:0x141420, shininess:35, specular:0x222236}),
+    rust:      new THREE.MeshLambertMaterial({color:0x2a1a12}),
+    wood:      new THREE.MeshLambertMaterial({color:0x1a1208}),
+    woodDark:  new THREE.MeshLambertMaterial({color:0x120e06}),
+    poster:    new THREE.MeshLambertMaterial({color:0x1a1828}),
+    posterFade:new THREE.MeshLambertMaterial({color:0x141218}),
+    sign:      new THREE.MeshLambertMaterial({color:0x0e1218,emissive:0x060810}),
+    lamp:      new THREE.MeshLambertMaterial({color:0x665533,emissive:0x3a2810}),
+    lampOff:   new THREE.MeshLambertMaterial({color:0x1a1814}),
+    pipe:      new THREE.MeshLambertMaterial({color:0x181820}),
+    chair:     new THREE.MeshLambertMaterial({color:0x141018}),
+    desk:      new THREE.MeshLambertMaterial({color:0x16120a}),
+    cable:     new THREE.MeshLambertMaterial({color:0x0e0e14}),
+    // Eerie-prop materials. The "Glow" variants always carry emissive so they
+    // read as light sources even without a PointLight (saves shader uniforms).
+    boothFrame: new THREE.MeshLambertMaterial({color:0x141420}),
+    boothGlow:  new THREE.MeshLambertMaterial({color:0x331108, emissive:0x4a1a10}),
+    vendBody:   new THREE.MeshLambertMaterial({color:0x171720}),
+    vendGlow1:  new THREE.MeshLambertMaterial({color:0x163844, emissive:0x2a5c70}),
+    vendGlow2:  new THREE.MeshLambertMaterial({color:0x113344, emissive:0x1d4a66}),
+    busPanel:   new THREE.MeshLambertMaterial({color:0x121822, emissive:0x161e2c}),
+    busLight:   new THREE.MeshLambertMaterial({color:0x88aaff, emissive:0x4466cc}),
+    crtScreen:  new THREE.MeshLambertMaterial({color:0x445577, emissive:0x4a5a7a}),
+    crtBezel:   new THREE.MeshLambertMaterial({color:0x101018}),
+    watcher:    new THREE.MeshLambertMaterial({color:0x06060c}),
+  };
+
+  // Mobile-only: add an emissive floor to the concrete/building materials
+  // so they self-illuminate slightly. This is independent of any light in
+  // the scene — even a wall in deep shadow will render at the emissive
+  // value, which means there's no such thing as a "black wall" on a phone
+  // screen. The factor (0.35) is chosen to lift dark Lambert colours from
+  // ~0.04 visible to ~0.18 visible without making them look like they're
+  // glowing.
+  if (IS_TOUCH) {
+    var emissiveKeys = ['ground','brut1','brut2','brut3','conc1','conc2','conc3','concRaw',
+                        'walkway','iFloor','iTile','iCeil','iWall','iStair','metal','metalDark',
+                        'wood','woodDark','planter','rust',
+                        // Prop bodies (NOT the *Glow variants — they're already self-lit, and
+                        // NOT watcher — that should remain a near-black silhouette).
+                        'boothFrame','vendBody','crtBezel'];
+    emissiveKeys.forEach(function(k){
+      var m = M[k];
+      if (m && m.color && m.emissive) {
+        m.emissive.copy(m.color).multiplyScalar(0.35);
+      }
+    });
+    // Also reduce streetlamp/fluorescent intensities — with the ambient
+    // floor lifted, lamps don't need to be as hot, and that kills the
+    // bright-patch problem near them.
+    window.__LAMP_MUL = 0.65;
+  } else {
+    window.__LAMP_MUL = 1.0;
+  }
+  // v11 procgen: dim-night sessions multiply lamp intensity by 0.85. Almost
+  // invisible difference; just enough that a "darker" session feels heavier
+  // without anything in the world having visibly changed.
+  if (window.__LAMP_PROCGEN) window.__LAMP_MUL *= window.__LAMP_PROCGEN;
+
+  buildWorld(scene);
+
+  // ── BLOB SHADOW (v11) ──
+  // A cheap radial-gradient sprite parented to the player's foot position.
+  // No real-time shadow map (renderer.shadowMap stays disabled). Faded by
+  // jump height so it reads like the player has volume on the ground without
+  // costing a real shadow pass. Single quad, single material — trivial cost.
+  // Lives at fy + 0.012 so it floats just above floor seams without
+  // z-fighting kerbs (kerbs sit at 0.07).
+  var _blobTex = (function(){
+    var c = document.createElement('canvas'); c.width = c.height = 64;
+    var g = c.getContext('2d');
+    var rad = g.createRadialGradient(32,32,0, 32,32,32);
+    rad.addColorStop(0, 'rgba(0,0,0,0.55)');
+    rad.addColorStop(0.55, 'rgba(0,0,0,0.18)');
+    rad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = rad; g.fillRect(0,0,64,64);
+    var t = new THREE.CanvasTexture(c);
+    t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter;
+    return t;
+  })();
+  var blobMat = new THREE.MeshBasicMaterial({
+    map: _blobTex, transparent: true, depthWrite: false, opacity: 0.55,
+    color: 0x000000
+  });
+  var blob = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.85), blobMat);
+  blob.rotation.x = -Math.PI/2;
+  blob.position.set(0, 0.012, 0);
+  blob.visible = false;
+  scene.add(blob);
+
+  // ── INPUT STATE ──
+  // (velY/onGround are declared in the PHYSICS block below — they hoist, so the
+  // save/load bridge can reference them safely.)
+  var keys = {};
+  var yaw = 0, pitch = 0;
+  var locked = false;
+
+  // ── SAVE/LOAD BRIDGE ──
+  // Two-mode function: pass an object to load that state, omit to read current.
+  getGameCamera = function(load) {
+    if (load) {
+      camera.position.set(load.x, load.y, load.z);
+      yaw   = load.yaw   || 0;
+      pitch = load.pitch || 0;
+      velY  = 0; onGround = true;
+    } else {
+      return { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw: yaw, pitch: pitch };
+    }
+  };
+  // Auto-load saved position on start, if any.
+  try {
+    var autoLoad = localStorage.getItem('liminal_save');
+    if (autoLoad) {
+      var ald = JSON.parse(autoLoad);
+      camera.position.set(ald.x, ald.y, ald.z);
+      yaw   = ald.yaw   || 0;
+      pitch = ald.pitch || 0;
+    }
+  } catch(e){}
+
+  applyOpts();
+  updateSavedDisplay();
+
+  window.addEventListener('keydown', function(e) {
+    keys[e.code] = true;
+    if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.code)>-1) e.preventDefault();
+  });
+  window.addEventListener('keyup', function(e) { keys[e.code] = false; });
+
+  // Pointer lock (desktop only — touch devices use the canvas drag-to-look)
+  canvas.addEventListener('click', function() {
+    initAudio();
+    _maybeAttachListener();
+    if (IS_TOUCH) return;
+    if (canvas.requestPointerLock) try { canvas.requestPointerLock(); } catch(e){}
+  });
+  document.addEventListener('pointerlockchange', function() {
+    locked = document.pointerLockElement === canvas;
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!locked) return;
+    yaw   -= e.movementX * 0.002 * sensMul;
+    pitch -= e.movementY * 0.002 * sensMul * (opts.invertY ? -1 : 1);
+    pitch = Math.max(-1.0, Math.min(1.0, pitch));
+  });
+
+  // Expose hooks for option sliders to update live
+  window.__applyFov = function(fov) {
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+  };
+  window.__applySens = function(sens, inv) {
+    sensMul = sens / 100;
+    // invertY is read directly from opts in mousemove
+  };
+  // Initial apply (opts may have been loaded from localStorage)
+  window.__applyFov(opts.fov || 68);
+  window.__applySens(opts.sens || 100, !!opts.invertY);
+
+  // ── Touch input ──
+  // Track which touch IDs are owned by which UI element so they don't drive
+  // camera look. The look pointer is a single touch tracked on its own.
+  var ownedTouches = {}; // touchId -> 'btn' | 'look'
+  var touchLook = null;  // {id,x,y}
+
+  function setKey(code, down) {
+    keys[code] = down;
+    if (down) { initAudio(); _maybeAttachListener(); }
+  }
+  function setKeyTap(code) {
+    // For interact (E): synthetic press-then-release across two frames so the
+    // edge-trigger logic in the loop fires exactly once.
+    keys[code] = true;
+    initAudio();
+    _maybeAttachListener();
+    setTimeout(function(){ keys[code] = false; }, 90);
+  }
+
+  // Bind every touch button (dpad + actions). Toggle buttons flip state per tap;
+  // momentary buttons hold while pressed. All swallow touch events so they
+  // don't bleed into the look handler.
+  function bindTouchBtn(btn) {
+    var code = btn.dataset.key;
+    var isToggle = btn.dataset.toggle === '1';
+    var isTap    = code === 'KeyE';
+    var pressed  = false;
+    var toggled  = false;
+
+    function press(e){
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (e && e.changedTouches) {
+        for (var i=0;i<e.changedTouches.length;i++) ownedTouches[e.changedTouches[i].identifier] = 'btn';
+      }
+      pressed = true;
+      btn.classList.add('active');
+      if (isTap)         { setKeyTap(code); }
+      else if (isToggle) { toggled = !toggled; btn.classList.toggle('on', toggled); setKey(code, toggled); }
+      else               { setKey(code, true); }
+    }
+    function release(e){
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (e && e.changedTouches) {
+        for (var i=0;i<e.changedTouches.length;i++) delete ownedTouches[e.changedTouches[i].identifier];
+      }
+      pressed = false;
+      btn.classList.remove('active');
+      if (!isToggle && !isTap) setKey(code, false);
+    }
+
+    btn.addEventListener('touchstart',  press,   {passive:false});
+    btn.addEventListener('touchend',    release, {passive:false});
+    btn.addEventListener('touchcancel', release, {passive:false});
+    // Mouse fallback so the same UI works on desktop touch-enabled screens.
+    btn.addEventListener('mousedown', function(e){ e.preventDefault(); press(); });
+    btn.addEventListener('mouseup',   function(e){ e.preventDefault(); release(); });
+    btn.addEventListener('mouseleave',function(){ if (pressed) release(); });
+  }
+  // Action buttons (jump/run/crouch/use) are bound individually.
+  // The d-pad is handled as a single joystick below — bind it as a unit so a
+  // touch can drag from one direction into another without lifting.
+  document.querySelectorAll('.akey').forEach(bindTouchBtn);
+
+  // ── D-pad joystick ──
+  // Single touch anywhere inside the dpad ring sets direction by where the
+  // finger is relative to the dpad's centre. Drag up/left/down/right while
+  // still pressed and the active key swaps live. Diagonals engage two keys
+  // at once. Lifting clears all four direction keys.
+  var dpadEl = document.getElementById('dpad');
+  var dpadTouchId = null;
+  var dkeyByCode = {};
+  document.querySelectorAll('.dkey').forEach(function(b){ dkeyByCode[b.dataset.key] = b; });
+
+  function setDpadKey(code, on) {
+    keys[code] = on;
+    var b = dkeyByCode[code];
+    if (b) b.classList.toggle('active', on);
+  }
+  function clearDpad() {
+    setDpadKey('KeyW', false);
+    setDpadKey('KeyA', false);
+    setDpadKey('KeyS', false);
+    setDpadKey('KeyD', false);
+  }
+  function setDpadFromPoint(cx, cy) {
+    var rect = dpadEl.getBoundingClientRect();
+    var ox = cx - (rect.left + rect.width/2);
+    var oy = cy - (rect.top  + rect.height/2);
+    var len = Math.sqrt(ox*ox + oy*oy);
+    // Deadzone ≈ inner cell of the 3×3 grid. Inside it = no direction.
+    var deadzone = Math.min(rect.width, rect.height) * 0.18;
+    var w=false, a=false, s=false, d=false;
+    if (len > deadzone) {
+      var nx = ox / len, ny = oy / len;
+      // 0.38 ≈ cos(67°) — engages a second axis once the angle is past 22°
+      // from a cardinal, so diagonals feel natural.
+      if (ny < -0.38) w = true;
+      if (ny >  0.38) s = true;
+      if (nx < -0.38) a = true;
+      if (nx >  0.38) d = true;
+    }
+    setDpadKey('KeyW', w);
+    setDpadKey('KeyA', a);
+    setDpadKey('KeyS', s);
+    setDpadKey('KeyD', d);
+  }
+
+  dpadEl.addEventListener('touchstart', function(e){
+    initAudio();
+    _maybeAttachListener();
+    if (dpadTouchId !== null) { e.preventDefault(); return; }
+    var t = e.changedTouches[0];
+    dpadTouchId = t.identifier;
+    ownedTouches[t.identifier] = 'btn';
+    setDpadFromPoint(t.clientX, t.clientY);
+    e.preventDefault();
+    e.stopPropagation();
+  }, {passive:false});
+
+  dpadEl.addEventListener('touchmove', function(e){
+    if (dpadTouchId === null) return;
+    for (var i=0;i<e.changedTouches.length;i++){
+      var t = e.changedTouches[i];
+      if (t.identifier === dpadTouchId) {
+        setDpadFromPoint(t.clientX, t.clientY);
+        e.preventDefault();
+        e.stopPropagation();
+        break;
+      }
+    }
+  }, {passive:false});
+
+  function endDpad(e){
+    if (dpadTouchId === null) return;
+    for (var i=0;i<e.changedTouches.length;i++){
+      if (e.changedTouches[i].identifier === dpadTouchId) {
+        delete ownedTouches[dpadTouchId];
+        dpadTouchId = null;
+        clearDpad();
+        e.preventDefault();
+        e.stopPropagation();
+        break;
+      }
+    }
+  }
+  dpadEl.addEventListener('touchend',    endDpad, {passive:false});
+  dpadEl.addEventListener('touchcancel', endDpad, {passive:false});
+
+  // Mouse fallback for desktop touch screens — click+drag inside the dpad ring.
+  var dpadMouseDown = false;
+  dpadEl.addEventListener('mousedown', function(e){
+    e.preventDefault(); dpadMouseDown = true; setDpadFromPoint(e.clientX, e.clientY);
+  });
+  window.addEventListener('mousemove', function(e){
+    if (!dpadMouseDown) return;
+    setDpadFromPoint(e.clientX, e.clientY);
+  });
+  window.addEventListener('mouseup', function(){
+    if (!dpadMouseDown) return;
+    dpadMouseDown = false; clearDpad();
+  });
+
+  // Camera look — touches that didn't start on a button.
+  // Right half of the screen is "look territory"; touches that begin on the
+  // left half but outside the dpad still pan (helps when fingers stray).
+  function isLookTouch(t) {
+    var el = document.elementFromPoint(t.clientX, t.clientY);
+    if (!el) return true;
+    // Anywhere in the dpad joystick ring or on an action button is not a look touch.
+    if (el.classList.contains('dkey') || el.classList.contains('akey')) return false;
+    if (el.id === 'dpad' || (el.closest && el.closest('#dpad'))) return false;
+    if (el.id === 'actions' || (el.closest && el.closest('#actions'))) return false;
+    return true;
+  }
+
+  canvas.addEventListener('touchstart', function(e) {
+    initAudio();
+    _maybeAttachListener();
+    for (var i=0;i<e.changedTouches.length;i++) {
+      var t = e.changedTouches[i];
+      if (!isLookTouch(t)) continue;
+      if (touchLook) continue; // one finger at a time for look
+      ownedTouches[t.identifier] = 'look';
+      touchLook = { id: t.identifier, x: t.clientX, y: t.clientY };
+    }
+    e.preventDefault();
+  }, {passive:false});
+
+  canvas.addEventListener('touchmove', function(e) {
+    if (!touchLook) return;
+    for (var i=0;i<e.changedTouches.length;i++) {
+      var t = e.changedTouches[i];
+      if (t.identifier !== touchLook.id) continue;
+      var dx = t.clientX - touchLook.x;
+      var dy = t.clientY - touchLook.y;
+      // Touch sensitivity scales with the user-facing sens slider AND screen size,
+      // so flicks feel similar on a phone vs a tablet.
+      var s = 0.0042 * sensMul;
+      yaw   -= dx * s;
+      pitch -= dy * s * (opts.invertY ? -1 : 1);
+      pitch = Math.max(-1.0, Math.min(1.0, pitch));
+      touchLook.x = t.clientX;
+      touchLook.y = t.clientY;
+    }
+    e.preventDefault();
+  }, {passive:false});
+
+  function endLook(e) {
+    if (!e.changedTouches) return;
+    for (var i=0;i<e.changedTouches.length;i++) {
+      var id = e.changedTouches[i].identifier;
+      if (touchLook && touchLook.id === id) touchLook = null;
+      delete ownedTouches[id];
+    }
+  }
+  canvas.addEventListener('touchend',    endLook);
+  canvas.addEventListener('touchcancel', endLook);
+
+  // ── PHYSICS ──
+  var velY=0, onGround=true, bobPhase=0;
+  var GRAV=-20, JVEL=6.2, EYE=1.7, RAD=0.38;
+
+  function resolveWalls(pos) {
+    for(var i=0;i<solids.length;i++){
+      var b=solids[i];
+      var cx=(b.minX+b.maxX)/2, cz=(b.minZ+b.maxZ)/2;
+      var hw=(b.maxX-b.minX)/2+RAD, hd=(b.maxZ-b.minZ)/2+RAD;
+      var dx=pos.x-cx, dz=pos.z-cz;
+      if(Math.abs(dx)<hw&&Math.abs(dz)<hd){
+        var ox=hw-Math.abs(dx), oz=hd-Math.abs(dz);
+        if(ox<oz) pos.x+=dx>=0?ox:-ox; else pos.z+=dz>=0?oz:-oz;
+      }
+    }
+  }
+
+  // ── OVERLAY ──
+  var ov = document.getElementById('ov');
+  var octx = ov.getContext('2d');
+
+  // Static overlay canvas — scanlines + vignette drawn once. Sized to match the
+  // current internal framebuffer so it follows the live aspect on rotate.
+  var ovStatic = document.createElement('canvas');
+  var osCtx = ovStatic.getContext('2d');
+  function rebuildStaticOverlay() {
+    var w = ov.width, h = ov.height;
+    if (ovStatic.width !== w)  ovStatic.width = w;
+    if (ovStatic.height !== h) ovStatic.height = h;
+    osCtx.clearRect(0,0,w,h);
+    if(opts.scanlines){ osCtx.fillStyle='rgba(0,0,0,0.13)'; for(var y=0;y<h;y+=2) osCtx.fillRect(0,y,w,1); }
+    if(opts.vignette){ var vig=osCtx.createRadialGradient(w/2,h/2,h*.14,w/2,h/2,h*.86); vig.addColorStop(0,'rgba(0,0,0,0)'); vig.addColorStop(1,'rgba(0,0,8,.45)'); osCtx.fillStyle=vig; osCtx.fillRect(0,0,w,h); }
+  }
+  rebuildStaticOverlay();
+  // The resizeRenderer above already updates ov.width/height on rotate; piggyback
+  // on the same resize/orientationchange events to refresh the static layer too.
+  window.addEventListener('resize', rebuildStaticOverlay);
+  window.addEventListener('orientationchange', function(){ setTimeout(rebuildStaticOverlay, 140); });
+  // Rebuild when opts change
+  var _prevScan=opts.scanlines, _prevVig=opts.vignette;
+
+  function drawOverlayFrame() {
+    var w=ov.width, h=ov.height;
+    if(opts.scanlines!==_prevScan||opts.vignette!==_prevVig){ rebuildStaticOverlay(); _prevScan=opts.scanlines; _prevVig=opts.vignette; }
+    octx.clearRect(0,0,w,h);
+    octx.drawImage(ovStatic,0,0);
+    if(opts.grain){ for(var i=0;i<60;i++){octx.fillStyle='rgba(255,255,255,'+(Math.random()*.05)+')';octx.fillRect(Math.random()*w,Math.random()*h,1,1);} }
+    // Heartbeat pulse — darkens the edges briefly when the heart beats
+    if (pulse > 0.01) {
+      var pg = octx.createRadialGradient(w/2,h/2,h*.18, w/2,h/2,h*.72);
+      pg.addColorStop(0, 'rgba(0,0,0,0)');
+      pg.addColorStop(1, 'rgba(20,0,8,'+(pulse*0.42)+')');
+      octx.fillStyle=pg; octx.fillRect(0,0,w,h);
+    }
+  }
+
+  var hud  = document.getElementById('hud');
+  var info = document.getElementById('info');
+  var clock = new THREE.Clock();
+  var jumped = false;
+  var _eWasDown = false;
+  var stillTimer = 0, heartTimer = 0;
+  var stamina = 1.0;            // 0..1 — depletes while sprinting, regens otherwise
+  var _prevSpaceId = null;      // v11: tracks zone-change so drift fires once per entry
+  var crouchT = 0;              // 0..1 — eased crouch state
+  var sensMul = 1.0;            // updated from opts in applyOpts()
+  var pulse = 0;                // 0..1 — visual heartbeat pulse, decays each frame
+
+  // ── DEATH ──
+  function onCaught() {
+    if (dead) return;
+    dead = true;
+    playMonsterScreech();
+    if (document.exitPointerLock) document.exitPointerLock();
+    pulse = 1.4;
+    // Hide HUD; reveal death overlay after a beat of silence
+    hud.textContent = '';
+    var ds = document.getElementById('death');
+    ds.classList.add('show');
+    setTimeout(function(){ ds.classList.add('in'); }, 60);
+  }
+  document.getElementById('death').addEventListener('click', function(){
+    location.reload();
+  });
+
+  // ── FRAME LOOP ──
+  function frame() {
+    requestAnimationFrame(frame);
+    var dt = Math.min(clock.getDelta(), 0.033);
+
+    if (dead) {
+      // Slow head-tilt as the screen fades to red. No input, no physics.
+      camera.rotation.x = Math.max(-1.35, camera.rotation.x - dt*0.35);
+      camera.position.y = Math.max(0.6, camera.position.y - dt*0.5);
+      // Continue updating monster animation + rumble so it's still looming
+      if (monster) {
+        var m=monster;
+        m.walkPhase += dt*7;
+        var s2 = Math.sin(m.walkPhase)*0.55;
+        m.lArm.rotation.x = -s2*0.9; m.rArm.rotation.x = s2*0.9;
+        m.head.rotation.x = 0.4 + Math.sin(performance.now()*0.012)*0.1;
+        // Stay close, looming
+        var dx2 = camera.position.x - m.grp.position.x;
+        var dz2 = camera.position.z - m.grp.position.z;
+        var d2 = Math.sqrt(dx2*dx2+dz2*dz2);
+        if (d2 > 1.0) {
+          m.grp.position.x += (dx2/d2)*dt*1.2;
+          m.grp.position.z += (dz2/d2)*dt*1.2;
+        }
+        m.grp.rotation.y = Math.atan2(dx2,dz2);
+      }
+      pulse = Math.max(0, pulse - dt*0.6);
+      renderer.render(scene, camera);
+      drawOverlayFrame();
+      return;
+    }
+
+    if(optOpen) { drawOverlayFrame(); return; } // pause physics when menu open
+
+    // Monster lifecycle — count down to spawn, update if active
+    if (!monster) {
+      monsterSpawnTimer -= dt;
+      if (monsterSpawnTimer <= 0) {
+        spawnMonster(scene, camera.position.x, camera.position.z);
+      }
+    } else {
+      updateMonster(scene, dt, camera.position.x, camera.position.z, onCaught);
+    }
+
+    var moving    = keys['KeyW']||keys['KeyS']||keys['KeyA']||keys['KeyD']||keys['ArrowUp']||keys['ArrowDown']||keys['ArrowLeft']||keys['ArrowRight'];
+    var crouching = !!keys['KeyC'];
+    var wantSprint= moving && (keys['ShiftLeft']||keys['ShiftRight']) && !crouching && stamina > 0.05;
+    var sprinting = wantSprint;
+    if (sprinting) stamina = Math.max(0, stamina - dt*0.18);
+    else           stamina = Math.min(1, stamina + dt*0.10);
+
+    // Smooth crouch transition
+    var crouchTarget = crouching ? 1 : 0;
+    crouchT += (crouchTarget - crouchT) * Math.min(dt*8, 1);
+
+    var speed = (sprinting ? 11 : (crouching ? 3.2 : 6.5));
+
+    // horizontal movement
+    var dir = new THREE.Vector3();
+    if(keys['KeyW']||keys['ArrowUp'])    dir.z-=1;
+    if(keys['KeyS']||keys['ArrowDown'])  dir.z+=1;
+    if(keys['KeyA']||keys['ArrowLeft'])  dir.x-=1;
+    if(keys['KeyD']||keys['ArrowRight']) dir.x+=1;
+    dir.normalize().multiplyScalar(speed*dt);
+    dir.applyEuler(new THREE.Euler(0,yaw,0));
+
+    // zone
+    var zone = getZone(camera.position.x, camera.position.z);
+    var EYEh = EYE - crouchT * 0.7;
+    var floorY = zone ? zone.floorY+EYEh : EYEh;
+    var ceilY  = zone ? zone.ceilY-.4    : 9999;
+    var surf   = zone ? zone.surface : 'concrete';
+
+    // gravity
+    if(!onGround) velY += GRAV*dt; else velY=Math.max(velY,0);
+    // jump
+    if(keys['Space']&&onGround&&!jumped) { velY=JVEL; onGround=false; jumped=true; playJump(); }
+    if(!keys['Space']) jumped=false;
+
+    // integrate
+    var nx=camera.position.x+dir.x;
+    var ny=camera.position.y+velY*dt;
+    var nz=camera.position.z+dir.z;
+
+    // floor
+    if(ny<=floorY){ if(!onGround&&velY<-1) playLand(velY); ny=floorY; velY=0; onGround=true; }
+    else onGround=false;
+    // ceiling
+    if(ny>ceilY){ ny=ceilY; velY=Math.min(velY,0); }
+
+    // wall collision
+    var tmp = new THREE.Vector3(nx,ny,nz);
+    resolveWalls(tmp);
+    nx=tmp.x; nz=tmp.z;
+
+    // PS1 snap
+    camera.position.x = Math.round(nx/0.05)*0.05;
+    camera.position.z = Math.round(nz/0.05)*0.05;
+    camera.position.y = ny;
+
+    // head bob
+    if(moving && onGround) {
+      var bs = sprinting ? 11 : (crouching ? 4.0 : 6.5);
+      var ba = sprinting ? .065 : (crouching ? .010 : .022);
+      bobPhase+=dt*bs;
+      camera.position.y+=Math.sin(bobPhase)*ba;
+      if (opts.footsteps) playFootstep(surf, sprinting, crouching);
+    } else bobPhase=0;
+
+    doBreath(dt,sprinting,onGround);
+    setInsideAudio(!!zone);
+
+    // ── DYNAMIC ACOUSTICS ── reverb wet send reacts to room and walls
+    if (AC && reverbGain) {
+      var wallD = nearestWallDist(camera.position.x, camera.position.z);
+      var sz = zoneSize(zone);
+      var targetWet;
+      if (zone) {
+        // Indoor base: 0.55. Tiny rooms damp it; corridors/large rooms swell.
+        targetWet = 0.45 + Math.min(0.30, sz/180);
+        // Right next to a wall (within ~1.2m) → extra slap-back
+        if (wallD < 1.2) targetWet += 0.20 * (1 - wallD/1.2);
+      } else {
+        // Outdoor base: mostly dry. Standing close to a building face still
+        // adds a touch of reflection.
+        targetWet = 0.10;
+        if (wallD < 1.5) targetWet += 0.18 * (1 - wallD/1.5);
+      }
+      // Smooth one-pole toward target so transitions don't pop
+      var prev = reverbGain.gain.value;
+      reverbGain.gain.value = prev + (targetWet - prev) * Math.min(dt*5, 1);
+    }
+
+    // ── LIGHT FLICKER ── streetlights buzz off briefly; fluorescents stutter
+    for(var fi=0; fi<flickers.length; fi++){
+      var f=flickers[fi];
+      f.t -= dt;
+      if(f.state==='on' && f.t<=0){
+        // Roll for next event: most are short flickers, some kill the light entirely
+        var roll=Math.random();
+        if(f.mode==='lamp'){
+          if(roll<0.06){ f.state='dead'; f.light.intensity=0; if(f.bulbMat){f.bulbMat.emissive.setHex(0x100804);} f.t=20+Math.random()*40; }
+          else { f.state='flickering'; f.t=0.25+Math.random()*1.4; }
+        } else {
+          if(roll<0.04){ f.state='dead'; f.light.intensity=0; if(f.bulbMat){f.bulbMat.emissive.setHex(0x040408);} f.t=18+Math.random()*30; }
+          else { f.state='flickering'; f.t=0.18+Math.random()*0.9; }
+        }
+      } else if(f.state==='flickering'){
+        // Random on/off toggle each frame inside the flicker window
+        var on=Math.random()>0.45;
+        f.light.intensity = on ? f.baseI*(0.7+Math.random()*0.4) : f.baseI*0.05;
+        if(f.bulbMat){ f.bulbMat.emissive.setHex(on ? f.baseEmissive : 0x000000); }
+        if(f.t<=0){
+          f.state='on'; f.light.intensity=f.baseI;
+          if(f.bulbMat){ f.bulbMat.emissive.setHex(f.baseEmissive); }
+          f.t = (f.mode==='lamp' ? 8+Math.random()*22 : 5+Math.random()*15);
+        }
+      } else if(f.state==='dead'){
+        if(f.t<=0){
+          f.state='on'; f.light.intensity=f.baseI;
+          if(f.bulbMat){ f.bulbMat.emissive.setHex(f.baseEmissive); }
+          f.t = 6+Math.random()*16;
+        }
+      }
+    }
+
+    // ── HEARTBEAT ── kicks in when stationary inside a building too long
+    if(zone && !moving && onGround){
+      stillTimer += dt;
+      if(stillTimer>5.5){
+        heartTimer -= dt;
+        if(heartTimer<=0){
+          var rate = Math.max(0.55, 1.4 - (stillTimer-5.5)*0.04);
+          playHeartbeat();
+          heartTimer = rate;
+          pulse = 1;  // sync visual pulse to audio
+        }
+      }
+    } else { stillTimer = 0; heartTimer = 0; }
+    pulse = Math.max(0, pulse - dt*3.5);
+
+    // apply look
+    camera.rotation.y = yaw;
+    camera.rotation.x = pitch;
+
+    // ── DOOR INTERACTION ──
+    var DOOR_REACH = 2.2;
+    var nearDoor = null, nearDist = DOOR_REACH;
+    for(var di=0; di<doors.length; di++){
+      var dd=doors[di];
+      var ddx=camera.position.x-dd.hx, ddz=camera.position.z-dd.hz;
+      var dist=Math.sqrt(ddx*ddx+ddz*ddz);
+      if(dist<nearDist){ nearDist=dist; nearDoor=dd; }
+      // Animate
+      var angleDiff = dd.targetAngle - dd.currentAngle;
+      if(Math.abs(angleDiff)>0.002){
+        dd.currentAngle += angleDiff * Math.min(dt*8, 1);
+        dd.pivot.rotation.y = dd.currentAngle;
+      }
+    }
+    if(nearDoor && (keys['KeyE'] && !_eWasDown)){
+      nearDoor.open = !nearDoor.open;
+      nearDoor.targetAngle = nearDoor.open ? nearDoor.openAngle : 0;
+      playDoorCreak(nearDoor.open);
+    }
+    _eWasDown = !!keys['KeyE'];
+
+    // HUD — subtle prompts only
+    var hudText;
+    if (nearDoor) hudText = '[E] ' + (nearDoor.open?'close':'open');
+    else if (crouching) hudText = 'crouched';
+    else if (zone) hudText = 'interior';
+    else hudText = 'you are here';
+    if (sprinting && stamina < 0.25) hudText = 'out of breath';
+    hud.textContent = hudText;
+
+    // ── MEMORY DRIFT — fire when the active space changes ──
+    // The zone object reveals only floor/ceil/surface, not identity. To
+    // recover space identity from the zone we look up the registered space
+    // whose centre best matches the zone bounds' centre. Cheap (≤25 spaces).
+    var curSpaceId = null;
+    if (zone) {
+      var zcx = (zone.minX+zone.maxX)*0.5, zcz = (zone.minZ+zone.maxZ)*0.5;
+      // Find the space whose (cx,cz) matches the zone centre — they're built
+      // together, so this lookup is exact within ~0.1m.
+      for (var si=0; si<spaces.length; si++) {
+        var sp = spaces[si];
+        if (Math.abs(sp.cx - zcx) < 0.5 && Math.abs(sp.cz - zcz) < 0.5) {
+          curSpaceId = sp.id;
+          if (curSpaceId !== _prevSpaceId) enterSpace(sp);
+          break;
+        }
+      }
+    }
+    _prevSpaceId = curSpaceId;
+
+    // ── BLOB SHADOW — follow player's feet, fade with jump height ──
+    if (opts.blobShadow) {
+      blob.visible = true;
+      var groundY = zone ? zone.floorY : 0;
+      blob.position.x = camera.position.x;
+      blob.position.z = camera.position.z;
+      blob.position.y = groundY + 0.012;
+      // Eye-to-floor distance ranges from ~1.7 (standing/grounded) up to
+      // ~3+ during a jump. Beyond ~1.0 of "lift" the blob fades to nothing
+      // — same effect as a real shadow growing softer as the caster lifts.
+      var lift = (camera.position.y - groundY) - (EYE - crouchT*0.7);
+      var f = Math.max(0, Math.min(1, 1 - lift*0.9));
+      blob.material.opacity = 0.55 * f;
+      // Scale grows slightly with lift so the blur reads as a softening blob.
+      var sc = 1 + lift*0.4;
+      blob.scale.set(sc, sc, sc);
+    } else {
+      blob.visible = false;
+    }
+
+    // ── GHOST PRESENCES — fade based on camera-forward dot product ──
+    // For each ghost, compute the angle between camera-forward and the unit
+    // vector camera→ghost. dot > 0.94 (≈ within ~20°) means the ghost is in
+    // direct view → fade opacity to 0 quickly. dot < 0.50 means it's well
+    // outside the forward cone → ramp opacity up to capOpacity. The middle
+    // band hovers in between, smoothing the transition. If `opts.ghosts` is
+    // off, force opacity to 0 every frame so the toggle is responsive.
+    if (ghosts.length) {
+      // Camera forward in world space (camera looks down -Z by convention).
+      var fwd = new THREE.Vector3(0,0,-1).applyEuler(camera.rotation);
+      for (var gi=0; gi<ghosts.length; gi++) {
+        var g = ghosts[gi];
+        var gx = g.grp.position.x - camera.position.x;
+        var gz = g.grp.position.z - camera.position.z;
+        var gd = Math.sqrt(gx*gx + gz*gz);
+        var target;
+        if (!opts.ghosts || gd > 35) {
+          target = 0;
+        } else {
+          var ux = gx / Math.max(0.001, gd);
+          var uz = gz / Math.max(0.001, gd);
+          var dot = fwd.x*ux + fwd.z*uz;
+          if (dot > 0.94) target = 0;          // looked at → invisible
+          else if (dot < 0.50) target = g.capOpacity; // fully peripheral
+          else target = g.capOpacity * (1 - (dot - 0.50)/0.44);
+          // Distance falloff so far ghosts don't pop into view through fog.
+          if (gd > 20) target *= Math.max(0, 1 - (gd-20)/15);
+        }
+        // Smoothed approach — ~250ms to fade either way.
+        var rate = (target < g.opacity) ? 8 : 4; // fade-out faster than fade-in
+        g.opacity += (target - g.opacity) * Math.min(dt*rate, 1);
+        if (g.opacity < 0.001) g.opacity = 0;
+        g.mat.opacity = g.opacity;
+        // Hide the whole group when opacity is essentially 0 — saves the
+        // 6-mesh transparent pass per ghost when fully invisible.
+        g.grp.visible = g.opacity > 0.001;
+      }
+    }
+
+    renderer.render(scene, camera);
+    drawOverlayFrame();
+  }
+
+  frame();
+  document.getElementById('hud').textContent = 'you are here';
+}
+</script>
+</body>
+</html>
